@@ -13,9 +13,9 @@ func main() {
 	for j := 0; j < 10; j++ {
 		for i := 0; i < canvas.Width(); i++ {
 			if i < canvas.Width()/2 {
-				canvas.SetPixel(i, j, 0, 0, 0)
+				canvas.SetRGB(i, j, 0, 0, 0)
 			} else {
-				canvas.SetPixel(i, j, 255, 255, 255)
+				canvas.SetRGB(i, j, 255, 255, 255)
 			}
 		}
 	}
@@ -24,17 +24,17 @@ func main() {
 		for i := 0; i < canvas.Width(); i++ {
 			switch {
 			case i < 1*canvas.Width()/6:
-				canvas.SetPixel(i, j, 115, 11, 219)
+				canvas.SetRGB(i, j, 115, 11, 219)
 			case i < 2*canvas.Width()/6:
-				canvas.SetPixel(i, j, 11, 105, 219)
+				canvas.SetRGB(i, j, 11, 105, 219)
 			case i < 3*canvas.Width()/6:
-				canvas.SetPixel(i, j, 54, 138, 12)
+				canvas.SetRGB(i, j, 54, 138, 12)
 			case i < 4*canvas.Width()/6:
-				canvas.SetPixel(i, j, 222, 212, 16)
+				canvas.SetRGB(i, j, 222, 212, 16)
 			case i < 5*canvas.Width()/6:
-				canvas.SetPixel(i, j, 222, 129, 16)
+				canvas.SetRGB(i, j, 222, 129, 16)
 			default:
-				canvas.SetPixel(i, j, 222, 16, 16)
+				canvas.SetRGB(i, j, 222, 16, 16)
 			}
 		}
 	}

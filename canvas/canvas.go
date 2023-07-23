@@ -50,7 +50,7 @@ func (canvas *Canvas) Height() int {
 
 // Set r, g and b values of the pixel at coordinates (x, y). Panics if the
 // pixels given are out of bounds.
-func (canvas *Canvas) SetPixel(x, y int, r, g, b uint8) error {
+func (canvas *Canvas) SetRGB(x, y int, r, g, b uint8) error {
 	if x < 0 || y < 0 || x >= canvas.width || y >= canvas.height {
 		panic(fmt.Sprintf("pixel coordinates out of bounds - tried to access pixel (%d, %d) in a %dx%d canvas", x, y, canvas.width, canvas.height))
 	}
@@ -62,8 +62,8 @@ func (canvas *Canvas) SetPixel(x, y int, r, g, b uint8) error {
 	return nil
 }
 
-func (canvas *Canvas) SetPixel(x, y int, color Color) error {
-	return canvas.SetPixel(x, y, color.R, color.G, color.B)
+func (canvas *Canvas) SetColor(x, y int, color Color) error {
+	return canvas.SetRGB(x, y, color.R, color.G, color.B)
 }
 
 // Write the canvas to a PPM (P6) file. If a file exists at the given path, it
