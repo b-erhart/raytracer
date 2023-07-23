@@ -12,12 +12,9 @@ import (
 type Canvas struct {
 	width  int
 	height int
-	// Red pixel values
-	R [][]uint8
-	// Green pixel values
-	G [][]uint8
-	// Blue pixel values
-	B [][]uint8
+	R      [][]uint8
+	G      [][]uint8
+	B      [][]uint8
 }
 
 // Create a new canvas with specified width and height. Initialize R, G and B
