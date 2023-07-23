@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// Canvas to draw RGB values to
+// Canvas to draw RGB values to.
 type Canvas struct {
 	width  int
 	height int
@@ -38,12 +38,12 @@ func NewCanvas(width, height int) *Canvas {
 	return &canvas
 }
 
-// Get canvas width in pixels
+// Get canvas width in pixels.
 func (canvas *Canvas) Width() int {
 	return canvas.width
 }
 
-// Get canvas height in pixels
+// Get canvas height in pixels.
 func (canvas *Canvas) Height() int {
 	return canvas.height
 }
@@ -60,6 +60,10 @@ func (canvas *Canvas) SetPixel(x, y int, r, g, b uint8) error {
 	canvas.B[x][y] = b
 
 	return nil
+}
+
+func (canvas *Canvas) SetPixel(x, y int, color Color) error {
+	return canvas.SetPixel(x, y, color.R, color.G, color.B)
 }
 
 // Write the canvas to a PPM (P6) file. If a file exists at the given path, it

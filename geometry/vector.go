@@ -5,7 +5,7 @@ import (
 	"math"
 )
 
-// A 3-dimensional vector.
+// 3-dimensional vector.
 type Vector struct {
 	X float64
 	Y float64
