@@ -5,41 +5,36 @@ import (
 	"os"
 
 	"github.com/b-erhart/raytracer/canvas"
+	"github.com/b-erhart/raytracer/geometry"
 )
 
 func main() {
-	canvas := canvas.NewCanvas(120, 80)
+	canv := canvas.NewCanvas(120, 80)
 
-	for j := 0; j < 10; j++ {
-		for i := 0; i < canvas.Width(); i++ {
-			if i < canvas.Width()/2 {
-				canvas.SetRGB(i, j, 0, 0, 0)
-			} else {
-				canvas.SetRGB(i, j, 255, 255, 255)
-			}
-		}
-	}
+	eye := &geometry.Vector{X: 0, Y: 0, Z: 0}
+	lookAt := &geometry.Vector{X: 1, Y: 0, Z: 0}
+	up := &geometry.Vector{X: 0, Y: 1, Z: 0}
 
-	for j := 10; j < canvas.Height(); j++ {
-		for i := 0; i < canvas.Width(); i++ {
-			switch {
-			case i < 1*canvas.Width()/6:
-				canvas.SetRGB(i, j, 115, 11, 219)
-			case i < 2*canvas.Width()/6:
-				canvas.SetRGB(i, j, 11, 105, 219)
-			case i < 3*canvas.Width()/6:
-				canvas.SetRGB(i, j, 54, 138, 12)
-			case i < 4*canvas.Width()/6:
-				canvas.SetRGB(i, j, 222, 212, 16)
-			case i < 5*canvas.Width()/6:
-				canvas.SetRGB(i, j, 222, 129, 16)
-			default:
-				canvas.SetRGB(i, j, 222, 16, 16)
-			}
-		}
-	}
+	view := geometry.NewView(canv, eye, lookAt, up, 55)
 
-	err := canvas.WriteToPpm("./output.ppm")
+	var objects []geometry.Object
+	objects = append(objects, &geometry.Sphere{Center: geometry.Vector{X: 8, Y: 0, Z: 0}, Radius: 2})
+	objects = append(objects, &geometry.Sphere{Center: geometry.Vector{X: 12, Y: 3, Z: 4}, Radius: 2})
+
+	var lights []geometry.Light
+	lights = append(lights, geometry.Light{
+		Direction: geometry.Vector{X: -100, Y: -100, Z: -100},
+		Color:     canvas.Color{R: 150, G: 255, B: 150},
+	})
+
+	background := canvas.Color{R: 21, G: 21, B: 21}
+	ambience := canvas.Color{R: 10, G: 10, B: 30}
+
+	raytracer := geometry.NewRaytracer(&objects, &lights, background, ambience)
+
+	raytracer.Render(view, canv)
+
+	err := canv.WriteToPpm("./output.ppm")
 
 	if err != nil {
 		fmt.Println("Error:", err)
