@@ -1,6 +1,8 @@
 package geometry
 
 import (
+	"sync"
+
 	"github.com/b-erhart/raytracer/canvas"
 )
 
@@ -15,29 +17,39 @@ func NewRaytracer(objects *[]Object, lights *[]Light, background, ambience canva
 	return &Raytracer{objects, lights, background, ambience}
 }
 
-func (r *Raytracer) Render(view *View, canvas *canvas.Canvas) {
+func (r *Raytracer) Render(view *View, canv *canvas.Canvas) {
 	origin := view.Eye()
 	lineStart := view.BottomLeft()
 
-	for j := 0; j < canvas.Height(); j++ {
+	var wg sync.WaitGroup
+
+	for j := 0; j < canv.Height(); j++ {
 		current := lineStart
 
-		for i := 0; i < canvas.Width(); i++ {
-			direction := Sub(current, origin).Normalize()
+		for i := 0; i < canv.Width(); i++ {
+			wg.Add(1)
 
-			ray := Ray{
-				Origin:    origin,
-				Direction: direction,
-				Depth:     0,
-			}
+			go func(i, j int, current *Vector) {
+				defer wg.Done()
 
-			canvas.SetColor(i, j, r.Trace(&ray))
+				direction := Sub(current, origin).Normalize()
 
+				ray := Ray{
+					Origin:    origin,
+					Direction: direction,
+					Depth:     0,
+				}
+
+				canv.SetColor(i, j, r.Trace(&ray))
+			}(i, j, current)
+			
 			current = Add(current, view.Du())
 		}
 
 		lineStart = Add(lineStart, view.Dv())
 	}
+
+	wg.Wait()
 }
 
 func (r *Raytracer) Trace(ray *Ray) canvas.Color {
