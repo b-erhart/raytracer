@@ -1,5 +1,6 @@
 package geometry
 
 type Object interface {
-	HitBy(ray *Ray) bool
+	Intersection(ray Ray) (bool, float64)
+	SurfaceNormal(point Vector) Vector
 }

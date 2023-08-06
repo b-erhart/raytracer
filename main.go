@@ -9,17 +9,18 @@ import (
 )
 
 func main() {
-	canv := canvas.NewCanvas(120, 80)
+	canv := canvas.NewCanvas(1920, 1080)
 
-	eye := &geometry.Vector{X: 0, Y: 0, Z: 0}
-	lookAt := &geometry.Vector{X: 1, Y: 0, Z: 0}
-	up := &geometry.Vector{X: 0, Y: 1, Z: 0}
+	eye := geometry.Vector{X: 0, Y: 0, Z: 0}
+	lookAt := geometry.Vector{X: 0, Y: 0, Z: 1.2}
+	up := geometry.Vector{X: 0, Y: 1, Z: 0}
 
 	view := geometry.NewView(canv, eye, lookAt, up, 55)
 
 	var objects []geometry.Object
-	objects = append(objects, &geometry.Sphere{Center: geometry.Vector{X: 8, Y: 0, Z: 0}, Radius: 2})
-	objects = append(objects, &geometry.Sphere{Center: geometry.Vector{X: 12, Y: 3, Z: 4}, Radius: 2})
+	objects = append(objects, geometry.Sphere{Center: geometry.Vector{X: 2, Y: 0, Z: 17}, Radius: 2})
+	objects = append(objects, geometry.Sphere{Center: geometry.Vector{X: 4, Y: 2, Z: 14}, Radius: 2})
+	objects = append(objects, geometry.Sphere{Center: geometry.Vector{X: -3, Y: 0, Z: 10}, Radius: 2})
 
 	var lights []geometry.Light
 	lights = append(lights, geometry.Light{
@@ -30,7 +31,7 @@ func main() {
 	background := canvas.Color{R: 21, G: 21, B: 21}
 	ambience := canvas.Color{R: 10, G: 10, B: 30}
 
-	raytracer := geometry.NewRaytracer(&objects, &lights, background, ambience)
+	raytracer := geometry.NewRaytracer(objects, &lights, background, ambience)
 
 	raytracer.Render(view, canv)
 
