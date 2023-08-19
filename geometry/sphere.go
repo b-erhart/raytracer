@@ -1,10 +1,17 @@
 package geometry
 
-import "math"
+import (
+	"math"
+
+	"github.com/b-erhart/raytracer/canvas"
+)
 
 type Sphere struct {
 	Center Vector
 	Radius float64
+	Col canvas.Color
+	Refl float64
+	Mirr float64
 }
 
 func (s Sphere) Intersection(ray Ray) (bool, float64) {
@@ -37,4 +44,16 @@ func (s Sphere) Intersects(ray Ray) bool {
 
 func (s Sphere) SurfaceNormal(point Vector) Vector {
 	return Sub(point, s.Center)
+}
+
+func (s Sphere) Color() canvas.Color {
+	return s.Col
+}
+
+func (s Sphere) Reflectivity() float64 {
+	return s.Refl
+}
+
+func (s Sphere) Mirror() float64 {
+	return s.Mirr
 }

@@ -18,14 +18,15 @@ func main() {
 	view := geometry.NewView(canv, eye, lookAt, up, 55)
 
 	var objects []geometry.Object
-	objects = append(objects, geometry.Sphere{Center: geometry.Vector{X: 2, Y: 0, Z: 17}, Radius: 2})
-	objects = append(objects, geometry.Sphere{Center: geometry.Vector{X: 4, Y: 2, Z: 14}, Radius: 2})
-	objects = append(objects, geometry.Sphere{Center: geometry.Vector{X: -3, Y: 0, Z: 10}, Radius: 2})
+	objects = append(objects, geometry.Sphere{Center: geometry.Vector{X: 2, Y: 0, Z: 17}, Radius: 2, Col: canvas.Color{R: 42, G: 106, B: 245}, Refl: 0.75, Mirr: 0.5})
+	objects = append(objects, geometry.Sphere{Center: geometry.Vector{X: 4, Y: 2, Z: 14}, Radius: 2, Col: canvas.Color{R: 230, G: 32, B: 183}, Refl: 0.66, Mirr: 0.2})
+	objects = append(objects, geometry.Sphere{Center: geometry.Vector{X: -3, Y: 0, Z: 10}, Radius: 2, Col: canvas.Color{R: 224, G: 38, B: 9}, Refl: 0.45, Mirr: 0.05})
+	objects = append(objects, geometry.Sphere{Center: geometry.Vector{X: 0, Y: -300, Z: 80}, Radius: 300, Col: canvas.Color{R: 6, G: 117, B: 13}, Refl: 0.25, Mirr: 0.15})
 
 	var lights []geometry.Light
 	lights = append(lights, geometry.Light{
-		Direction: geometry.Vector{X: -100, Y: -100, Z: -100},
-		Color:     canvas.Color{R: 150, G: 255, B: 150},
+		Direction: geometry.Vector{X: -0.4, Y: 0.6, Z: -0.75},
+		Color:     canvas.Color{R: 255, G: 200, B: 210},
 	})
 
 	background := canvas.Color{R: 21, G: 21, B: 21}
