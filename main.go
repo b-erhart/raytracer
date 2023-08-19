@@ -25,7 +25,7 @@ func main() {
 
 	var lights []geometry.Light
 	lights = append(lights, geometry.Light{
-		Direction: geometry.Vector{X: -0.4, Y: 0.6, Z: -0.75},
+		Direction: geometry.Vector{X: 0.4, Y: -0.6, Z: 0.75},
 		Color:     canvas.Color{R: 255, G: 200, B: 210},
 	})
 

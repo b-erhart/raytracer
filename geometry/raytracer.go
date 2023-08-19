@@ -74,7 +74,7 @@ func (r *Raytracer) Trace(ray Ray) canvas.Color {
 			return closestObj.Color()
 		}
 
-		color := closestObj.Color()
+		color := closestObj.Color().Merge(canvas.Color{}, 0.5)
 		point := ray.At(tMin)
 		normal := closestObj.SurfaceNormal(point)
 		reflect := Sub(ray.Direction, Sprod(Sprod(normal, Dot(normal, ray.Direction)), 2))
@@ -84,8 +84,24 @@ func (r *Raytracer) Trace(ray Ray) canvas.Color {
 		 	Depth:     ray.Depth + 1,
 		}
 
+		Lights:
 		for _, light := range *r.lights {
-			ld := Dot(light.Direction.Normalize(), normal.Normalize())
+			towardsLight := Sprod(light.Direction, -1).Normalize()
+			rayToLight := Ray{
+				Origin:    point,
+				Direction: towardsLight,
+				Depth:     0,
+			}
+
+			for _, object := range r.objects {
+				intersects, t := object.Intersection(rayToLight)
+				
+				if intersects && t >= 0.00001 {
+					continue Lights
+				}
+			}
+
+			ld := Dot(towardsLight, normal.Normalize())
 
 			if ld > 0 {
 				color = color.Merge(light.Color, ld*closestObj.Reflectivity())
