@@ -74,11 +74,12 @@ func (r *Raytracer) Trace(ray Ray) canvas.Color {
 		return r.background
 	} else if closestObj == nil {
 		return canvas.Color{}
-	} else if closestObj.Reflectivity() <= 0 {
-		return closestObj.Color()
+	} else if closestObj.Props().Reflectivity <= 0 {
+		return closestObj.Props().Color
 	}
 
-	color := closestObj.Color()
+	surface := closestObj.Props()
+	color := surface.Color
 	point := ray.At(tMin)
 	normal := closestObj.SurfaceNormal(point)
 	reflect := Sub(ray.Direction, Sprod(Sprod(normal, Dot(normal, ray.Direction)), 2))
@@ -108,14 +109,14 @@ func (r *Raytracer) Trace(ray Ray) canvas.Color {
 		ld := Dot(towardsLight, normal.Normalize())
 
 		if ld > 0 {
-			color = color.Merge(light.Color, ld*closestObj.Reflectivity())
+			color = color.Merge(light.Color, ld*surface.Reflectivity)
 		}
 
 		spec := Dot(reflectedRay.Direction.Normalize(), towardsLight.Normalize())
 
 		if spec > 0 {
 			spec = math.Pow(math.Pow(math.Pow(spec, 2), 2), 2)
-			spec *= closestObj.Specular()
+			spec *= surface.Specular
 			specColor := light.Color.Mult(spec)
 			color = color.Add(specColor)
 		}
@@ -123,5 +124,5 @@ func (r *Raytracer) Trace(ray Ray) canvas.Color {
 
 	reflection := r.Trace(reflectedRay)
 
-	return color.Merge(reflection, closestObj.Mirror())
+	return color.Merge(reflection, surface.Mirror)
 }

@@ -1,18 +1,11 @@
 package geometry
 
-import (
-	"math"
-
-	"github.com/b-erhart/raytracer/canvas"
-)
+import "math"
 
 type Sphere struct {
-	Center Vector
-	Radius float64
-	Col canvas.Color
-	Refl float64
-	Mirr float64
-	Spec float64
+	Center     Vector
+	Radius     float64
+	Properties ObjectProps
 }
 
 func (s Sphere) Intersection(ray Ray) (bool, float64) {
@@ -28,14 +21,14 @@ func (s Sphere) Intersection(ray Ray) (bool, float64) {
 	t2 := -1*x - e
 
 	switch {
-		case t1 < 0 && t2 < 0:
-			return false, 0
-		case t1 < 0:
-			return true, t2
-		case t2 < 0:
-			return true, t1
-		default:
-			return true, math.Min(t1, t2)
+	case t1 < 0 && t2 < 0:
+		return false, 0
+	case t1 < 0:
+		return true, t2
+	case t2 < 0:
+		return true, t1
+	default:
+		return true, math.Min(t1, t2)
 	}
 }
 
@@ -47,18 +40,6 @@ func (s Sphere) SurfaceNormal(point Vector) Vector {
 	return Sub(point, s.Center)
 }
 
-func (s Sphere) Color() canvas.Color {
-	return s.Col
-}
-
-func (s Sphere) Reflectivity() float64 {
-	return s.Refl
-}
-
-func (s Sphere) Mirror() float64 {
-	return s.Mirr
-}
-
-func (s Sphere) Specular() float64 {
-	return s.Spec
+func (s Sphere) Props() ObjectProps {
+	return s.Properties
 }
