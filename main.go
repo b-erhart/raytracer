@@ -22,30 +22,30 @@ func main() {
 		Center: geometry.Vector{X: 2, Y: 0, Z: 17},
 		Radius: 2,
 		Properties: geometry.ObjectProps{
-			Color: canvas.Color{R: 83, G: 83, B: 84},
+			Color:        canvas.Color{R: 83, G: 83, B: 84},
 			Reflectivity: 0.75,
-			Mirror: 0.5,
-			Specular: 0.5,
+			Mirror:       0.5,
+			Specular:     0.5,
 		},
 	})
 	objects = append(objects, geometry.Sphere{
 		Center: geometry.Vector{X: 4, Y: 2, Z: 14},
 		Radius: 2,
 		Properties: geometry.ObjectProps{
-			Color: canvas.Color{R: 230, G: 32, B: 183},
+			Color:        canvas.Color{R: 230, G: 32, B: 183},
 			Reflectivity: 0.66,
-			Mirror: 0.2,
-			Specular: 0.2,
+			Mirror:       0.2,
+			Specular:     0.2,
 		},
 	})
 	objects = append(objects, geometry.Sphere{
 		Center: geometry.Vector{X: -3, Y: 0, Z: 10},
 		Radius: 2,
 		Properties: geometry.ObjectProps{
-			Color: canvas.Color{R: 224, G: 38, B: 9},
+			Color:        canvas.Color{R: 224, G: 38, B: 9},
 			Reflectivity: 0.45,
-			Mirror: 0.05,
-			Specular: 0.05,
+			Mirror:       0.05,
+			Specular:     0.05,
 		},
 	})
 	// objects = append(objects, geometry.Sphere{
@@ -63,10 +63,10 @@ func main() {
 		B: geometry.Vector{X: -5, Y: -2, Z: 12},
 		C: geometry.Vector{X: 5, Y: -2, Z: 15},
 		Properties: geometry.ObjectProps{
-			Color: canvas.Color{R: 230, G: 212, B: 23},
+			Color:        canvas.Color{R: 230, G: 212, B: 23},
 			Reflectivity: 0.25,
-			Mirror: 0.0025,
-			Specular: 0.0025,
+			Mirror:       0.0025,
+			Specular:     0.0025,
 		},
 	})
 

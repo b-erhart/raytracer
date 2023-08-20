@@ -1,9 +1,9 @@
 package geometry
 
 type Triangle struct {
-	A Vector
-	B Vector
-	C Vector
+	A          Vector
+	B          Vector
+	C          Vector
 	Properties ObjectProps
 }
 

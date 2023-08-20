@@ -9,8 +9,8 @@ type Object interface {
 }
 
 type ObjectProps struct {
-	Color canvas.Color
+	Color        canvas.Color
 	Reflectivity float64
-	Mirror float64
-	Specular float64
+	Mirror       float64
+	Specular     float64
 }

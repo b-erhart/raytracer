@@ -91,7 +91,7 @@ func (r *Raytracer) Trace(ray Ray) canvas.Color {
 		Depth:     ray.Depth + 1,
 	}
 
-	Lights:
+Lights:
 	for _, light := range *r.lights {
 		towardsLight := Sprod(light.Direction, -1).Normalize()
 		rayToLight := Ray{

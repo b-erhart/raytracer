@@ -51,7 +51,7 @@ func (c Color) String() string {
 }
 
 func addClamped(a, b uint8) uint8 {
-	if math.MaxUint8 - a < b {
+	if math.MaxUint8-a < b {
 		return math.MaxUint8
 	}
 
