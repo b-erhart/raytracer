@@ -48,11 +48,22 @@ func main() {
 			Specular: 0.05,
 		},
 	})
-	objects = append(objects, geometry.Sphere{
-		Center: geometry.Vector{X: 0, Y: -300, Z: 80},
-		Radius: 300,
+	// objects = append(objects, geometry.Sphere{
+	// 	Center: geometry.Vector{X: 0, Y: -300, Z: 80},
+	// 	Radius: 300,
+	// 	Properties: geometry.ObjectProps{
+	// 		Color: canvas.Color{R: 6, G: 117, B: 13},
+	// 		Reflectivity: 0.25,
+	// 		Mirror: 0.0025,
+	// 		Specular: 0.0025,
+	// 	},
+	// })
+	objects = append(objects, geometry.Triangle{
+		A: geometry.Vector{X: 0, Y: -5, Z: 8},
+		B: geometry.Vector{X: -5, Y: -2, Z: 12},
+		C: geometry.Vector{X: 5, Y: -2, Z: 15},
 		Properties: geometry.ObjectProps{
-			Color: canvas.Color{R: 6, G: 117, B: 13},
+			Color: canvas.Color{R: 230, G: 212, B: 23},
 			Reflectivity: 0.25,
 			Mirror: 0.0025,
 			Specular: 0.0025,

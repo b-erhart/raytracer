@@ -7,6 +7,8 @@ import (
 	"github.com/b-erhart/raytracer/canvas"
 )
 
+const Epsilon = 0.0000001
+
 type Raytracer struct {
 	objects    []Object
 	lights     *[]Light
@@ -64,7 +66,7 @@ func (r *Raytracer) Trace(ray Ray) canvas.Color {
 	for _, object := range r.objects {
 		intersects, t := object.Intersection(ray)
 
-		if intersects && t >= 0.00001 && (closestObj == nil || t < tMin) {
+		if intersects && t >= Epsilon && (closestObj == nil || t < tMin) {
 			closestObj = object
 			tMin = t
 		}
@@ -101,7 +103,7 @@ func (r *Raytracer) Trace(ray Ray) canvas.Color {
 		for _, object := range r.objects {
 			intersects, t := object.Intersection(rayToLight)
 
-			if intersects && t >= 0.00001 {
+			if intersects && t >= Epsilon {
 				continue Lights
 			}
 		}
