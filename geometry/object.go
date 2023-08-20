@@ -8,4 +8,5 @@ type Object interface {
 	Color() canvas.Color
 	Reflectivity() float64
 	Mirror() float64
+	Specular() float64
 }

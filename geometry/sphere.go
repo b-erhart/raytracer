@@ -12,6 +12,7 @@ type Sphere struct {
 	Col canvas.Color
 	Refl float64
 	Mirr float64
+	Spec float64
 }
 
 func (s Sphere) Intersection(ray Ray) (bool, float64) {
@@ -56,4 +57,8 @@ func (s Sphere) Reflectivity() float64 {
 
 func (s Sphere) Mirror() float64 {
 	return s.Mirr
+}
+
+func (s Sphere) Specular() float64 {
+	return s.Spec
 }

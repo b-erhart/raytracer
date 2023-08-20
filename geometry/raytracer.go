@@ -1,6 +1,7 @@
 package geometry
 
 import (
+	"math"
 	"sync"
 
 	"github.com/b-erhart/raytracer/canvas"
@@ -54,7 +55,7 @@ func (r *Raytracer) Render(view View, canv *canvas.Canvas) {
 
 func (r *Raytracer) Trace(ray Ray) canvas.Color {
 	if ray.Depth >= 10 {
-		return r.background
+		return canvas.Color{}
 	}
 
 	var closestObj Object
@@ -69,49 +70,58 @@ func (r *Raytracer) Trace(ray Ray) canvas.Color {
 		}
 	}
 
-	if closestObj != nil {
-		if closestObj.Reflectivity() <= 0 {
-			return closestObj.Color()
-		}
-
-		color := closestObj.Color().Merge(canvas.Color{}, 0.5)
-		point := ray.At(tMin)
-		normal := closestObj.SurfaceNormal(point)
-		reflect := Sub(ray.Direction, Sprod(Sprod(normal, Dot(normal, ray.Direction)), 2))
-		reflectedRay := Ray{
-		 	Origin:    point,
-		 	Direction: reflect,
-		 	Depth:     ray.Depth + 1,
-		}
-
-		Lights:
-		for _, light := range *r.lights {
-			towardsLight := Sprod(light.Direction, -1).Normalize()
-			rayToLight := Ray{
-				Origin:    point,
-				Direction: towardsLight,
-				Depth:     0,
-			}
-
-			for _, object := range r.objects {
-				intersects, t := object.Intersection(rayToLight)
-				
-				if intersects && t >= 0.00001 {
-					continue Lights
-				}
-			}
-
-			ld := Dot(towardsLight, normal.Normalize())
-
-			if ld > 0 {
-				color = color.Merge(light.Color, ld*closestObj.Reflectivity())
-			}
-		}
-
-		reflection := r.Trace(reflectedRay)
-
-		return color.Merge(reflection, closestObj.Mirror())
+	if closestObj == nil && ray.Depth == 0 {
+		return r.background
+	} else if closestObj == nil {
+		return canvas.Color{}
+	} else if closestObj.Reflectivity() <= 0 {
+		return closestObj.Color()
 	}
 
-	return r.background
+	color := closestObj.Color()
+	point := ray.At(tMin)
+	normal := closestObj.SurfaceNormal(point)
+	reflect := Sub(ray.Direction, Sprod(Sprod(normal, Dot(normal, ray.Direction)), 2))
+	reflectedRay := Ray{
+		Origin:    point,
+		Direction: reflect,
+		Depth:     ray.Depth + 1,
+	}
+
+	Lights:
+	for _, light := range *r.lights {
+		towardsLight := Sprod(light.Direction, -1).Normalize()
+		rayToLight := Ray{
+			Origin:    point,
+			Direction: towardsLight,
+			Depth:     0,
+		}
+
+		for _, object := range r.objects {
+			intersects, t := object.Intersection(rayToLight)
+
+			if intersects && t >= 0.00001 {
+				continue Lights
+			}
+		}
+
+		ld := Dot(towardsLight, normal.Normalize())
+
+		if ld > 0 {
+			color = color.Merge(light.Color, ld*closestObj.Reflectivity())
+		}
+
+		spec := Dot(reflectedRay.Direction.Normalize(), towardsLight.Normalize())
+
+		if spec > 0 {
+			spec = math.Pow(math.Pow(math.Pow(spec, 2), 2), 2)
+			spec *= closestObj.Specular()
+			specColor := light.Color.Mult(spec)
+			color = color.Add(specColor)
+		}
+	}
+
+	reflection := r.Trace(reflectedRay)
+
+	return color.Merge(reflection, closestObj.Mirror())
 }
