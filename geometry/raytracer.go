@@ -11,13 +11,13 @@ const Epsilon = 0.0000001
 
 type Raytracer struct {
 	objects    []Object
-	lights     *[]Light
+	lights     []Light
 	background canvas.Color
-	ambience   canvas.Color
+	// ambience   canvas.Color
 }
 
-func NewRaytracer(objects []Object, lights *[]Light, background, ambience canvas.Color) *Raytracer {
-	return &Raytracer{objects, lights, background, ambience}
+func NewRaytracer(objects []Object, lights []Light, background canvas.Color) *Raytracer {
+	return &Raytracer{objects, lights, background}
 }
 
 func (r *Raytracer) Render(view View, canv *canvas.Canvas) {
@@ -92,7 +92,7 @@ func (r *Raytracer) Trace(ray Ray) canvas.Color {
 	}
 
 Lights:
-	for _, light := range *r.lights {
+	for _, light := range r.lights {
 		towardsLight := Sprod(light.Direction, -1).Normalize()
 		rayToLight := Ray{
 			Origin:    point,

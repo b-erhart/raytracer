@@ -1,0 +1,59 @@
+{
+    "camera": {
+        "resolution": {
+            "width": 1920,
+            "height": 1080
+        },
+        "position": {"x": 0, "y": 0, "z": 0},
+        "lookAt": {"x": 0, "y": 0, "z": 1.2},
+        "up": {"x": 0, "y": 1, "z": 0},
+        "fov": 55.0
+    },
+    "background": {"r": 17, "g": 17, "b": 17},
+    "lights": [
+        {
+            "direction": {"x": 0.4, "y": -0.6, "z": 0.75},
+            "color": {"r": 255, "g": 200, "b": 210}
+        }
+    ],
+    "surfaceProps": [
+        {
+            "name": "s1",
+            "color": {"r": 83, "g": 83, "b": 84},
+            "reflectivity": 0.75,
+            "mirror": 0.5,
+            "specular": 0.5
+        },
+        {
+            "name": "s2",
+            "color": {"r": 230, "g": 32, "b": 183},
+            "reflectivity": 0.66,
+            "mirror": 0.2,
+            "specular": 0.2
+        },
+        {
+            "name": "s3",
+            "color": {"r": 224, "g": 38, "b": 9},
+            "reflectivity": 0.45,
+            "mirror": 0.05,
+            "specular": 0.05
+        }
+    ],
+    "spheres": [
+        {
+            "center": {"x": 2, "y": 0, "z": 17},
+            "radius": 2,
+            "surfaceProp": "s1"
+        },
+        {
+            "center": {"x": 4, "y": 2, "z": 14},
+            "radius": 2,
+            "surfaceProp": "s2"
+        },
+        {
+            "center": {"x": -3, "y": 0, "z": 10},
+            "radius": 2,
+            "surfaceProp": "s3"
+        }
+    ]
+}

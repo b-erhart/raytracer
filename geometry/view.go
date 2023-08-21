@@ -1,10 +1,6 @@
 package geometry
 
-import (
-	"math"
-
-	"github.com/b-erhart/raytracer/canvas"
-)
+import "math"
 
 type View struct {
 	eye    Vector
@@ -19,7 +15,7 @@ type View struct {
 	bottomLeft Vector
 }
 
-func NewView(canv *canvas.Canvas, eye, lookAt, up Vector, fov float64) View {
+func NewView(canvWidth, canvHeight int, eye, lookAt, up Vector, fov float64) View {
 	var view View
 
 	view.eye = eye
@@ -33,16 +29,16 @@ func NewView(canv *canvas.Canvas, eye, lookAt, up Vector, fov float64) View {
 	lxu := Cross(lookAt, view.u)
 	view.v = Sprod(lxu, -1/lxu.Length()).Normalize()
 
-	aspectRatio := float64(canv.Height()) / float64(canv.Width())
+	aspectRatio := float64(canvHeight) / float64(canvWidth)
 
 	uLen := math.Tan(fov * (math.Pi / 180))
 	vLen := uLen * aspectRatio
 
-	view.du = Sprod(view.u, uLen/float64(canv.Width()-1))
-	view.dv = Sprod(view.v, vLen/float64(canv.Height()-1))
+	view.du = Sprod(view.u, uLen/float64(canvWidth-1))
+	view.dv = Sprod(view.v, vLen/float64(canvHeight-1))
 
-	centerToLeft := Sprod(view.du, float64(-1*(canv.Width()/2)))
-	centerToBottom := Sprod(view.dv, float64(-1*(canv.Height()/2)))
+	centerToLeft := Sprod(view.du, float64(-1*(canvWidth/2)))
+	centerToBottom := Sprod(view.dv, float64(-1*(canvHeight/2)))
 	view.bottomLeft = Add(Add(eye, lookAt), Add(centerToLeft, centerToBottom))
 
 	return view

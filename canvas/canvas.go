@@ -20,6 +20,10 @@ type Canvas struct {
 // Create a new canvas with specified width and height. Initialize R, G and B
 // slices accordingly.
 func NewCanvas(width, height int) *Canvas {
+	if width <= 0 || height <= 0 {
+		panic("canvas width and height must be greater than 0")
+	}
+
 	canvas := Canvas{height: height, width: width}
 
 	canvas.R = make([][]uint8, width)

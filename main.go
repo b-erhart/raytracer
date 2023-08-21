@@ -3,90 +3,36 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
-	"github.com/b-erhart/raytracer/canvas"
 	"github.com/b-erhart/raytracer/geometry"
+	"github.com/b-erhart/raytracer/specification"
 )
 
 func main() {
-	canv := canvas.NewCanvas(1920, 1080)
-
-	eye := geometry.Vector{X: 0, Y: 0, Z: 0}
-	lookAt := geometry.Vector{X: 0, Y: 0, Z: 1.2}
-	up := geometry.Vector{X: 0, Y: 1, Z: 0}
-
-	view := geometry.NewView(canv, eye, lookAt, up, 55)
-
-	var objects []geometry.Object
-	objects = append(objects, geometry.Sphere{
-		Center: geometry.Vector{X: 2, Y: 0, Z: 17},
-		Radius: 2,
-		Properties: geometry.ObjectProps{
-			Color:        canvas.Color{R: 83, G: 83, B: 84},
-			Reflectivity: 0.75,
-			Mirror:       0.5,
-			Specular:     0.5,
-		},
-	})
-	objects = append(objects, geometry.Sphere{
-		Center: geometry.Vector{X: 4, Y: 2, Z: 14},
-		Radius: 2,
-		Properties: geometry.ObjectProps{
-			Color:        canvas.Color{R: 230, G: 32, B: 183},
-			Reflectivity: 0.66,
-			Mirror:       0.2,
-			Specular:     0.2,
-		},
-	})
-	objects = append(objects, geometry.Sphere{
-		Center: geometry.Vector{X: -3, Y: 0, Z: 10},
-		Radius: 2,
-		Properties: geometry.ObjectProps{
-			Color:        canvas.Color{R: 224, G: 38, B: 9},
-			Reflectivity: 0.45,
-			Mirror:       0.05,
-			Specular:     0.05,
-		},
-	})
-	// objects = append(objects, geometry.Sphere{
-	// 	Center: geometry.Vector{X: 0, Y: -300, Z: 80},
-	// 	Radius: 300,
-	// 	Properties: geometry.ObjectProps{
-	// 		Color: canvas.Color{R: 6, G: 117, B: 13},
-	// 		Reflectivity: 0.25,
-	// 		Mirror: 0.0025,
-	// 		Specular: 0.0025,
-	// 	},
-	// })
-	objects = append(objects, geometry.Triangle{
-		A: geometry.Vector{X: 0, Y: -5, Z: 8},
-		B: geometry.Vector{X: -5, Y: -2, Z: 12},
-		C: geometry.Vector{X: 5, Y: -2, Z: 15},
-		Properties: geometry.ObjectProps{
-			Color:        canvas.Color{R: 230, G: 212, B: 23},
-			Reflectivity: 0.25,
-			Mirror:       0.0025,
-			Specular:     0.0025,
-		},
-	})
-
-	var lights []geometry.Light
-	lights = append(lights, geometry.Light{
-		Direction: geometry.Vector{X: 0.4, Y: -0.6, Z: 0.75},
-		Color:     canvas.Color{R: 255, G: 200, B: 210},
-	})
-
-	background := canvas.Color{R: 21, G: 21, B: 21}
-	ambience := canvas.Color{R: 10, G: 10, B: 30}
-
-	raytracer := geometry.NewRaytracer(objects, &lights, background, ambience)
-
-	raytracer.Render(view, canv)
-
-	err := canv.WriteToPpm("./output.ppm")
+	canv, view, objects, lights, background, err := specification.Read("image.json")
 
 	if err != nil {
-		fmt.Println("Error:", err)
+		fmt.Println("error:", err)
+		os.Exit(2)
+	}
+
+	fmt.Println("Image spec read sucessfully!")
+
+	raytracer := geometry.NewRaytracer(objects, lights, background)
+
+	fmt.Println("Rendering image...")
+	start := time.Now()
+	raytracer.Render(view, &canv)
+	elapsed := time.Since(start)
+	fmt.Printf("Rendering done! (took %s)\n", elapsed)
+
+	fmt.Println("Writing PPM file...")
+	err = canv.WriteToPpm("./output.ppm")
+
+	if err != nil {
+		fmt.Println("error:", err)
 		os.Exit(1)
 	}
+	fmt.Println("Done!")
 }
