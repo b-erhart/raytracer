@@ -63,11 +63,11 @@ func (r *Raytracer) Trace(ray Ray) canvas.Color {
 	var closestObj Object
 	var tMin float64
 
-	for _, object := range r.objects {
-		intersects, t := object.Intersection(ray)
+	for i := 0; i < len(r.objects); i++ {
+		intersects, t := r.objects[i].Intersection(ray)
 
 		if intersects && t >= Epsilon && (closestObj == nil || t < tMin) {
-			closestObj = object
+			closestObj = r.objects[i]
 			tMin = t
 		}
 	}
@@ -84,6 +84,7 @@ func (r *Raytracer) Trace(ray Ray) canvas.Color {
 	color := surface.Color
 	point := ray.At(tMin)
 	normal := closestObj.SurfaceNormal(point)
+
 	reflect := Sub(ray.Direction, Sprod(Sprod(normal, Dot(normal, ray.Direction)), 2))
 	reflectedRay := Ray{
 		Origin:    point,
@@ -92,16 +93,16 @@ func (r *Raytracer) Trace(ray Ray) canvas.Color {
 	}
 
 Lights:
-	for _, light := range r.lights {
-		towardsLight := Sprod(light.Direction, -1).Normalize()
+	for i := 0;  i < len(r.lights); i++ {
+		towardsLight := Sprod(r.lights[i].Direction, -1).Normalize()
 		rayToLight := Ray{
 			Origin:    point,
 			Direction: towardsLight,
 			Depth:     0,
 		}
 
-		for _, object := range r.objects {
-			intersects, t := object.Intersection(rayToLight)
+		for j := 0; j < len(r.objects); j++ {
+			intersects, t := r.objects[j].Intersection(rayToLight)
 
 			if intersects && t >= Epsilon {
 				continue Lights
@@ -111,7 +112,7 @@ Lights:
 		ld := Dot(towardsLight, normal.Normalize())
 
 		if ld > 0 {
-			color = color.Merge(light.Color, ld*surface.Reflectivity)
+			color = color.Merge(r.lights[i].Color, ld*surface.Reflectivity)
 		}
 
 		spec := Dot(reflectedRay.Direction.Normalize(), towardsLight.Normalize())
@@ -119,7 +120,7 @@ Lights:
 		if spec > 0 {
 			spec = math.Pow(math.Pow(math.Pow(spec, 2), 2), 2)
 			spec *= surface.Specular
-			specColor := light.Color.Mult(spec)
+			specColor := r.lights[i].Color.Mult(spec)
 			color = color.Add(specColor)
 		}
 	}

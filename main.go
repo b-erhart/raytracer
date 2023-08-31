@@ -3,14 +3,24 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime/pprof"
 	"time"
 
 	"github.com/b-erhart/raytracer/geometry"
 	"github.com/b-erhart/raytracer/specification"
+	"github.com/b-erhart/raytracer/wavefront"
 )
 
 func main() {
-	canv, view, objects, lights, background, err := specification.Read("image.json")
+	f, err := os.Create("raytracer.prof")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	pprof.StartCPUProfile(f)
+	defer pprof.StopCPUProfile()
+	canv, view, _, lights, background, err := specification.Read("image.json")
 
 	if err != nil {
 		fmt.Println("error:", err)
@@ -19,7 +29,16 @@ func main() {
 
 	fmt.Println("Image spec read sucessfully!")
 
-	raytracer := geometry.NewRaytracer(objects, lights, background)
+	wavefrontFile := "teapot.obj"
+	wavefrontObjects, err := wavefront.Read(wavefrontFile, geometry.Vector{X: 0, Y: 0, Z: 10}, geometry.Vector{X: 0, Y: -0.3, Z: 0}, 4)
+	if err != nil {
+		fmt.Printf("%v", err)
+		os.Exit(5)
+	}
+
+	fmt.Printf("%s read successfully\n", wavefrontFile)
+
+	raytracer := geometry.NewRaytracer(wavefrontObjects, lights, background)
 
 	fmt.Println("Rendering image...")
 	start := time.Now()

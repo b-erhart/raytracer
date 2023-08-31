@@ -1,21 +1,28 @@
 package geometry
 
 type Triangle struct {
-	A          Vector
-	B          Vector
-	C          Vector
-	Properties ObjectProps
+	A                 Vector
+	B                 Vector
+	C                 Vector
+	Properties        ObjectProps
+	hasBoundingSphere bool
+	boundingSphere    Sphere
 }
 
 // Calculate intersection between triangle and ray.
 // Source: https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
 func (triangle Triangle) Intersection(ray Ray) (bool, float64) {
+	if triangle.hasBoundingSphere && !triangle.boundingSphere.Intersects(ray) {
+		return false, 0
+	}
+
 	edge1 := Sub(triangle.B, triangle.A)
 	edge2 := Sub(triangle.C, triangle.A)
 	h := Cross(ray.Direction, edge2)
 	a := Dot(edge1, h)
+	const e = 0.00001
 
-	if a > -Epsilon && a < Epsilon {
+	if a > -e && a < e {
 		return false, 0
 	}
 
@@ -36,7 +43,7 @@ func (triangle Triangle) Intersection(ray Ray) (bool, float64) {
 
 	t := f * Dot(edge2, q)
 
-	if t > Epsilon {
+	if t > e {
 		return true, t
 	}
 
