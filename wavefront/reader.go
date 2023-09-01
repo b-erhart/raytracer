@@ -111,7 +111,7 @@ func Read(path string, origin, rotation geometry.Vector, scaling float64) ([]geo
 		// b = geometry.Add(b, origin)
 		// c = geometry.Add(c, origin)
 
-		objs = append(objs, geometry.Triangle{A: a, B: b, C: c, Properties: props})
+		objs = append(objs, &geometry.Triangle{A: a, B: b, C: c, Properties: props})
 	}
 
 	return objs, nil

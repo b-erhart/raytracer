@@ -8,7 +8,7 @@ type Sphere struct {
 	Properties ObjectProps
 }
 
-func (s Sphere) Intersection(ray Ray) (bool, float64) {
+func (s *Sphere) Intersection(ray Ray) (bool, float64) {
 	if s.Intersects(ray) {
 		return false, 0
 	}
@@ -32,14 +32,14 @@ func (s Sphere) Intersection(ray Ray) (bool, float64) {
 	}
 }
 
-func (s Sphere) Intersects(ray Ray) bool {
+func (s *Sphere) Intersects(ray Ray) bool {
 	return Cross(ray.Direction.Normalize(), Sub(s.Center, ray.Origin)).Length() >= s.Radius
 }
 
-func (s Sphere) SurfaceNormal(point Vector) Vector {
+func (s *Sphere) SurfaceNormal(point Vector) Vector {
 	return Sub(point, s.Center)
 }
 
-func (s Sphere) Props() ObjectProps {
+func (s *Sphere) Props() ObjectProps {
 	return s.Properties
 }

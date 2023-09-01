@@ -56,7 +56,7 @@ func (s ImageSpec) objects() ([]geometry.Object, error) {
 			)
 		}
 
-		objs = append(objs, geometry.Sphere{
+		objs = append(objs, &geometry.Sphere{
 			Center:     sphere.Center,
 			Radius:     sphere.Radius,
 			Properties: prop,
@@ -72,7 +72,7 @@ func (s ImageSpec) objects() ([]geometry.Object, error) {
 			)
 		}
 
-		objs = append(objs, geometry.Triangle{
+		objs = append(objs, &geometry.Triangle{
 			A:          triangle.Corners[0],
 			B:          triangle.Corners[1],
 			C:          triangle.Corners[2],
