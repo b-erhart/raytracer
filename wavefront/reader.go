@@ -74,16 +74,16 @@ func Read(path string, origin, rotation geometry.Vector, scaling float64) ([]geo
 
 	objs := make([]geometry.Object, 0, len(fs))
 	centering := geometry.Vector{
-		X: -minV.X - (maxV.X - minV.X) / 2,
-		Y: -minV.Y - (maxV.Y - minV.Y) / 2,
-		Z: -minV.Z - (maxV.Z - minV.Z) / 2,
+		X: -minV.X - (maxV.X-minV.X)/2,
+		Y: -minV.Y - (maxV.Y-minV.Y)/2,
+		Z: -minV.Z - (maxV.Z-minV.Z)/2,
 	}
-	size := math.Max(maxV.X - minV.X, math.Max(maxV.Y - minV.Y, maxV.Z - minV.Z))
+	size := math.Max(maxV.X-minV.X, math.Max(maxV.Y-minV.Y, maxV.Z-minV.Z))
 	scalingFactor := scaling / size
 	props := geometry.ObjectProps{
-		Color:        canvas.Color{R: 224, G: 38, B: 9},
+		Color:        canvas.Color{R: 30, G: 160, B: 135},
 		Reflectivity: 0.45,
-		Mirror:       0.05,
+		Mirror:       0,
 		Specular:     0.05,
 	}
 
@@ -182,23 +182,23 @@ func readFace(words []string, vs []geometry.Vector) ([]geometry.Triangle, error)
 
 func rotate(vec, rotation geometry.Vector) geometry.Vector {
 	// rotate around x axis
-	xRotated := geometry.Vector {
+	xRotated := geometry.Vector{
 		X: vec.X,
-		Y: vec.Y * math.Cos(rotation.X * math.Pi) - vec.Z * math.Sin(rotation.X * math.Pi),
-		Z: vec.Y * math.Sin(rotation.X * math.Pi) + vec.Z * math.Cos(rotation.X * math.Pi),
+		Y: vec.Y*math.Cos(rotation.X*math.Pi) - vec.Z*math.Sin(rotation.X*math.Pi),
+		Z: vec.Y*math.Sin(rotation.X*math.Pi) + vec.Z*math.Cos(rotation.X*math.Pi),
 	}
 
 	// rotate around y axis
-	xyRotated := geometry.Vector {
-		X: xRotated.X * math.Cos(rotation.Y * math.Pi) + xRotated.Z * math.Sin(rotation.Y * math.Pi),
+	xyRotated := geometry.Vector{
+		X: xRotated.X*math.Cos(rotation.Y*math.Pi) + xRotated.Z*math.Sin(rotation.Y*math.Pi),
 		Y: xRotated.Y,
-		Z: -xRotated.X * math.Sin(rotation.Y * math.Pi) + xRotated.Z * math.Cos(rotation.Y * math.Pi),
+		Z: -xRotated.X*math.Sin(rotation.Y*math.Pi) + xRotated.Z*math.Cos(rotation.Y*math.Pi),
 	}
 
 	// rotate around z axis
-	xyzRotated := geometry.Vector {
-		X: xyRotated.X * math.Cos(rotation.Z * math.Pi) - xyRotated.Y * math.Sin(rotation.Z * math.Pi),
-		Y: xyRotated.X * math.Sin(rotation.Z * math.Pi) + xyRotated.Y * math.Cos(rotation.Z * math.Pi),
+	xyzRotated := geometry.Vector{
+		X: xyRotated.X*math.Cos(rotation.Z*math.Pi) - xyRotated.Y*math.Sin(rotation.Z*math.Pi),
+		Y: xyRotated.X*math.Sin(rotation.Z*math.Pi) + xyRotated.Y*math.Cos(rotation.Z*math.Pi),
 		Z: xyRotated.Z,
 	}
 

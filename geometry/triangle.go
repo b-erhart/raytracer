@@ -1,19 +1,23 @@
 package geometry
 
+import "math"
+
 type Triangle struct {
-	A          Vector
-	B          Vector
-	C          Vector
-	Properties ObjectProps
-	edges bool
-	edge1      Vector
-	edge2      Vector
+	A                Vector
+	B                Vector
+	C                Vector
+	Properties       ObjectProps
+	edgesCalculated  bool
+	edge1            Vector
+	edge2            Vector
+	extrmsCalculated bool
+	extrms           extremes
 }
 
 // Calculate intersection between triangle and ray.
 // Source: https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
 func (triangle *Triangle) Intersection(ray Ray) (bool, float64) {
-	if !triangle.edges {
+	if !triangle.edgesCalculated {
 		triangle.calculateEdges()
 	}
 
@@ -51,7 +55,7 @@ func (triangle *Triangle) Intersection(ray Ray) (bool, float64) {
 func (t *Triangle) calculateEdges() {
 	t.edge1 = Sub(t.B, t.A)
 	t.edge2 = Sub(t.C, t.A)
-	t.edges = true
+	t.edgesCalculated = true
 }
 
 func (t *Triangle) SurfaceNormal(point Vector) Vector {
@@ -63,4 +67,24 @@ func (t *Triangle) SurfaceNormal(point Vector) Vector {
 
 func (t *Triangle) Props() ObjectProps {
 	return t.Properties
+}
+
+func (t *Triangle) extremes() extremes {
+	if !t.extrmsCalculated {
+		t.calculateExtremes()
+	}
+
+	return t.extrms
+}
+
+func (t *Triangle) calculateExtremes() {
+	t.extrms = extremes{
+		minX: math.Min(t.A.X, math.Min(t.B.X, t.C.X)),
+		minY: math.Min(t.A.Y, math.Min(t.B.Y, t.C.Y)),
+		minZ: math.Min(t.A.Z, math.Min(t.B.Z, t.C.Z)),
+		maxX: math.Max(t.A.X, math.Max(t.B.X, t.C.X)),
+		maxY: math.Max(t.A.Y, math.Max(t.B.Y, t.C.Y)),
+		maxZ: math.Max(t.A.Z, math.Max(t.B.Z, t.C.Z)),
+	}
+	t.extrmsCalculated = true
 }

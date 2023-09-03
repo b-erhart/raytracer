@@ -20,7 +20,7 @@ func main() {
 
 	pprof.StartCPUProfile(f)
 	defer pprof.StopCPUProfile()
-	canv, view, _, lights, background, err := specification.Read("image.json")
+	canv, view, objs, lights, background, err := specification.Read("image.json")
 
 	if err != nil {
 		fmt.Println("error:", err)
@@ -30,15 +30,17 @@ func main() {
 	fmt.Println("Image spec read sucessfully!")
 
 	wavefrontFile := "teapot.obj"
-	wavefrontObjects, err := wavefront.Read(wavefrontFile, geometry.Vector{X: 0, Y: 0, Z: 10}, geometry.Vector{X: 0, Y: -0.3, Z: 0}, 4)
+	wavefrontObjects, err := wavefront.Read(wavefrontFile, geometry.Vector{X: 0.5, Y: -1, Z: 8}, geometry.Vector{X: 0, Y: 0.15, Z: 0}, 4)
 	if err != nil {
 		fmt.Printf("%v", err)
 		os.Exit(5)
 	}
 
+	allObjs := append(wavefrontObjects, objs...)
+
 	fmt.Printf("%s read successfully\n", wavefrontFile)
 
-	raytracer := geometry.NewRaytracer(wavefrontObjects, lights, background)
+	raytracer := geometry.NewRaytracer(allObjs, lights, background)
 
 	fmt.Println("Rendering image...")
 	start := time.Now()

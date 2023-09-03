@@ -6,6 +6,7 @@ type Object interface {
 	Intersection(ray Ray) (bool, float64)
 	SurfaceNormal(point Vector) Vector
 	Props() ObjectProps
+	extremes() extremes
 }
 
 type ObjectProps struct {

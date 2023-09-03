@@ -6,8 +6,8 @@ import (
 )
 
 type ImageSpec struct {
-	Camera       Camera `validate:"required"`
-	Background   canvas.Color  `validate:"required"`
+	Camera       Camera       `validate:"required"`
+	Background   canvas.Color `validate:"required"`
 	Lights       []geometry.Light
 	SurfaceProps []SurfaceProp
 	Spheres      []Sphere

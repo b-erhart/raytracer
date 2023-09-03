@@ -13,14 +13,16 @@ type Raytracer struct {
 	objects    []Object
 	lights     []Light
 	background canvas.Color
+	bvhTree    BvhTree
 	// ambience   canvas.Color
 }
 
 func NewRaytracer(objects []Object, lights []Light, background canvas.Color) *Raytracer {
-	return &Raytracer{objects, lights, background}
+	return &Raytracer{objects, lights, background, ConstructBvhTree(objects)}
 }
 
 func (r *Raytracer) Render(view View, canv *canvas.Canvas) {
+	// fmt.Printf("%v\n", r.bvhTree)
 	origin := view.Eye()
 	lineStart := view.BottomLeft()
 
@@ -63,11 +65,13 @@ func (r *Raytracer) Trace(ray Ray) canvas.Color {
 	var closestObj Object
 	var tMin float64
 
-	for i := 0; i < len(r.objects); i++ {
-		intersects, t := r.objects[i].Intersection(ray)
+	relevantObjs := r.bvhTree.GetRelevantObjects(ray)
+
+	for i := 0; i < len(relevantObjs); i++ {
+		intersects, t := relevantObjs[i].Intersection(ray)
 
 		if intersects && t >= Epsilon && (closestObj == nil || t < tMin) {
-			closestObj = r.objects[i]
+			closestObj = relevantObjs[i]
 			tMin = t
 		}
 	}
@@ -93,7 +97,7 @@ func (r *Raytracer) Trace(ray Ray) canvas.Color {
 	}
 
 Lights:
-	for i := 0;  i < len(r.lights); i++ {
+	for i := 0; i < len(r.lights); i++ {
 		towardsLight := Sprod(r.lights[i].Direction, -1).Normalize()
 		rayToLight := Ray{
 			Origin:    point,
@@ -101,8 +105,10 @@ Lights:
 			Depth:     0,
 		}
 
-		for j := 0; j < len(r.objects); j++ {
-			intersects, t := r.objects[j].Intersection(rayToLight)
+		lightRelevantObjs := r.bvhTree.GetRelevantObjects(rayToLight)
+
+		for j := 0; j < len(lightRelevantObjs); j++ {
+			intersects, t := lightRelevantObjs[j].Intersection(rayToLight)
 
 			if intersects && t >= Epsilon {
 				continue Lights

@@ -3,9 +3,11 @@ package geometry
 import "math"
 
 type Sphere struct {
-	Center     Vector
-	Radius     float64
-	Properties ObjectProps
+	Center           Vector
+	Radius           float64
+	Properties       ObjectProps
+	extrmsCalculated bool
+	extrms           extremes
 }
 
 func (s *Sphere) Intersection(ray Ray) (bool, float64) {
@@ -42,4 +44,24 @@ func (s *Sphere) SurfaceNormal(point Vector) Vector {
 
 func (s *Sphere) Props() ObjectProps {
 	return s.Properties
+}
+
+func (s *Sphere) extremes() extremes {
+	if !s.extrmsCalculated {
+		s.calculateExtremes()
+	}
+
+	return s.extrms
+}
+
+func (s *Sphere) calculateExtremes() {
+	s.extrms = extremes{
+		minX: s.Center.X - s.Radius,
+		minY: s.Center.Y - s.Radius,
+		minZ: s.Center.Z - s.Radius,
+		maxX: s.Center.X + s.Radius,
+		maxY: s.Center.Y + s.Radius,
+		maxZ: s.Center.Z + s.Radius,
+	}
+	s.extrmsCalculated = true
 }
