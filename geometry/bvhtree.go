@@ -58,7 +58,7 @@ func ConstructBvhTree(objs []Object) BvhTree {
 func constructElement(objs []Object) bvhTreeElement {
 	box := calculateBoundingBox(objs)
 
-	if len(objs) <= 4 {
+	if len(objs) <= 1 {
 		return &bvhTreeLeaf{
 			box:  box,
 			objs: objs,
