@@ -38,7 +38,7 @@ func Read(path string, origin, rotation geometry.Vector, scaling float64, props 
 		line := scanner.Text()
 		words := deleteEmpty(strings.Split(line, " "))
 
-		if len(words) == 0 {
+		if len(words) == 0 || words[0][0] == '#' {
 			continue
 		}
 
@@ -77,6 +77,8 @@ func Read(path string, origin, rotation geometry.Vector, scaling float64, props 
 		Y: -minV.Y - (maxV.Y-minV.Y)/2,
 		Z: -minV.Z - (maxV.Z-minV.Z)/2,
 	}
+
+	trianglesPerCorner := make(map[geometry.Vector][]*geometry.Triangle)
 	size := math.Max(maxV.X-minV.X, math.Max(maxV.Y-minV.Y, maxV.Z-minV.Z))
 	scalingFactor := scaling / size
 
@@ -101,7 +103,46 @@ func Read(path string, origin, rotation geometry.Vector, scaling float64, props 
 		b = geometry.Add(rotate(b, rotation), origin)
 		c = geometry.Add(rotate(c, rotation), origin)
 
-		objs = append(objs, &geometry.Triangle{A: a, B: b, C: c, Properties: props})
+		triangle := &geometry.Triangle{A: a, B: b, C: c, Properties: props}
+
+		objs = append(objs, triangle)
+		trianglesPerCorner[a] = append(trianglesPerCorner[a], triangle)
+		trianglesPerCorner[b] = append(trianglesPerCorner[b], triangle)
+		trianglesPerCorner[c] = append(trianglesPerCorner[c], triangle)
+	}
+
+	for corner, triangles := range trianglesPerCorner {
+		// group triangles that that don't have a sharp angle beween their normals to prevenet smearing effects
+		for i := 0; i < len(triangles); i++ {
+			normal := &geometry.Vector{}
+
+			tCount := 0
+
+			for j := 0; j < len(triangles); j++ {
+				dot := geometry.Dot(triangles[i].TriangleNormal(), triangles[j].TriangleNormal())
+
+				if dot > 0 || i == j {
+					tCount += 1
+					normal.X += triangles[j].TriangleNormal().X
+					normal.Y += triangles[j].TriangleNormal().Y
+					normal.Z += triangles[j].TriangleNormal().Z
+				}
+			}
+
+			normal.X /= float64(tCount)
+			normal.Y /= float64(tCount)
+			normal.Z /= float64(tCount)
+
+			if triangles[i].A == corner {
+				triangles[i].ASurfaceNormal = *normal
+			}
+			if triangles[i].B == corner {
+				triangles[i].BSurfaceNormal = *normal
+			}
+			if triangles[i].C == corner {
+				triangles[i].CSurfaceNormal = *normal
+			}
+		}
 	}
 
 	return objs, nil
@@ -153,8 +194,12 @@ func readFace(words []string, vs []geometry.Vector) ([]geometry.Triangle, error)
 
 		if int(vIdx) > len(vs) {
 			return []geometry.Triangle{}, fmt.Errorf("invalid face definition (vertex #%d is referenced but not defined)", vIdx)
-		} else if int(vIdx) < 1 {
+		} else if int(vIdx) == 0 {
 			return []geometry.Triangle{}, fmt.Errorf("invalid face definition (vertex number must be greater than 0)", vIdx)
+		}
+
+		if vIdx < 0 {
+			vIdx = int64(len(vs)) + vIdx + 1
 		}
 
 		corners = append(corners, vs[vIdx-1])

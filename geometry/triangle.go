@@ -7,6 +7,9 @@ type Triangle struct {
 	B                Vector
 	C                Vector
 	Properties       ObjectProps
+	ASurfaceNormal   Vector
+	BSurfaceNormal   Vector
+	CSurfaceNormal   Vector
 	edgesCalculated  bool
 	edge1            Vector
 	edge2            Vector
@@ -59,10 +62,17 @@ func (t *Triangle) calculateEdges() {
 }
 
 func (t *Triangle) SurfaceNormal(point Vector) Vector {
-	edge1 := Sub(t.B, t.A)
-	edge2 := Sub(t.C, t.A)
+	bary := t.bary(point)
 
-	return Cross(edge1, edge2)
+	return Add(Add(Sprod(t.ASurfaceNormal, bary.X), Sprod(t.BSurfaceNormal, bary.Y)), Sprod(t.CSurfaceNormal, bary.Z))
+}
+
+func (t *Triangle) TriangleNormal() Vector {
+	if !t.edgesCalculated {
+		t.calculateEdges()
+	}
+
+	return Cross(t.edge1, t.edge2)
 }
 
 func (t *Triangle) Props() ObjectProps {
@@ -75,6 +85,22 @@ func (t *Triangle) extremes() extremes {
 	}
 
 	return t.extrms
+}
+
+func (t *Triangle) bary(p Vector) Vector {
+	var bary Vector
+
+	normal := t.TriangleNormal()
+
+	areaABC := Dot(normal, Cross(Sub(t.B, t.A), Sub(t.C, t.A)))
+	areaPBC := Dot(normal, Cross(Sub(t.B, p), Sub(t.C, p)))
+	areaPCA := Dot(normal, Cross(Sub(t.C, p), Sub(t.A, p)))
+
+	bary.X = areaPBC / areaABC     // alpha
+	bary.Y = areaPCA / areaABC     // beta
+	bary.Z = 1.0 - bary.X - bary.Y // gamma
+
+	return bary
 }
 
 func (t *Triangle) calculateExtremes() {
