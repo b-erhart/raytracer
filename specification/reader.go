@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/b-erhart/raytracer/canvas"
 	"github.com/b-erhart/raytracer/geometry"
+	"github.com/b-erhart/raytracer/wavefront"
 )
 
 func (s ImageSpec) canvas() canvas.Canvas {
@@ -25,7 +27,7 @@ func (s ImageSpec) view() geometry.View {
 	)
 }
 
-func (s ImageSpec) objects() ([]geometry.Object, error) {
+func (s ImageSpec) objects(specFilePath string) ([]geometry.Object, error) {
 	props := make(map[string]geometry.ObjectProps, len(s.SurfaceProps))
 
 	for _, prop := range s.SurfaceProps {
@@ -80,6 +82,32 @@ func (s ImageSpec) objects() ([]geometry.Object, error) {
 		})
 	}
 
+	for _, objModel := range s.Models {
+		prop, exists := props[objModel.SurfaceProp]
+		if !exists {
+			return []geometry.Object{}, fmt.Errorf(
+				"surface properties with name \"%s\" do not exist but are assigned to a sphere",
+				objModel.SurfaceProp,
+			)
+		}
+
+		absoluteSpecPath, err := filepath.Abs(specFilePath)
+
+		if err != nil {
+			return []geometry.Object{}, err
+		}
+
+		absolutePath := filepath.Join(filepath.Dir(absoluteSpecPath), objModel.Path)
+
+		wavefrontObjs, err := wavefront.Read(absolutePath, objModel.Center, objModel.Rotation, objModel.Size, prop)
+
+		if err != nil {
+			return []geometry.Object{}, err
+		}
+
+		objs = append(objs, wavefrontObjs...)
+	}
+
 	return objs, nil
 }
 
@@ -110,7 +138,7 @@ func Read(path string) (canvas.Canvas, geometry.View, []geometry.Object, []geome
 		return canvas.Canvas{}, geometry.View{}, []geometry.Object{}, []geometry.Light{}, canvas.Color{}, err
 	}
 
-	objs, err := spec.objects()
+	objs, err := spec.objects(path)
 	if err != nil {
 		return canvas.Canvas{}, geometry.View{}, []geometry.Object{}, []geometry.Light{}, canvas.Color{}, err
 	}

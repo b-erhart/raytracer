@@ -12,6 +12,7 @@ type ImageSpec struct {
 	SurfaceProps []SurfaceProp
 	Spheres      []Sphere
 	Triangles    []Triangle
+	Models       []ObjModel
 }
 
 type Camera struct {
@@ -42,4 +43,12 @@ type Sphere struct {
 type Triangle struct {
 	Corners     [3]geometry.Vector `validate:"required"`
 	SurfaceProp string             `validate:"required"`
+}
+
+type ObjModel struct {
+	Path        string          `validate:"required"`
+	Size        float64         `validate:"required"`
+	Center      geometry.Vector `validate:"required"`
+	Rotation    geometry.Vector
+	SurfaceProp string          `validate:"required"`
 }

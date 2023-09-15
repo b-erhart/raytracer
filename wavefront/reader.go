@@ -10,11 +10,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/b-erhart/raytracer/canvas"
 	"github.com/b-erhart/raytracer/geometry"
 )
 
-func Read(path string, origin, rotation geometry.Vector, scaling float64) ([]geometry.Object, error) {
+func Read(path string, origin, rotation geometry.Vector, scaling float64, props geometry.ObjectProps) ([]geometry.Object, error) {
 	logger := log.Default()
 
 	logger.Printf("reading wavefront file \"%s\"\n", path)
@@ -80,12 +79,6 @@ func Read(path string, origin, rotation geometry.Vector, scaling float64) ([]geo
 	}
 	size := math.Max(maxV.X-minV.X, math.Max(maxV.Y-minV.Y, maxV.Z-minV.Z))
 	scalingFactor := scaling / size
-	props := geometry.ObjectProps{
-		Color:        canvas.Color{R: 30, G: 160, B: 135},
-		Reflectivity: 0.45,
-		Mirror:       0,
-		Specular:     0.05,
-	}
 
 	for i := 0; i < len(fs); i++ {
 		a := geometry.Vector{
@@ -107,9 +100,6 @@ func Read(path string, origin, rotation geometry.Vector, scaling float64) ([]geo
 		a = geometry.Add(rotate(a, rotation), origin)
 		b = geometry.Add(rotate(b, rotation), origin)
 		c = geometry.Add(rotate(c, rotation), origin)
-		// a = geometry.Add(a, origin)
-		// b = geometry.Add(b, origin)
-		// c = geometry.Add(c, origin)
 
 		objs = append(objs, &geometry.Triangle{A: a, B: b, C: c, Properties: props})
 	}

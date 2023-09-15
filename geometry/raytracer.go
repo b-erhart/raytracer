@@ -14,7 +14,6 @@ type Raytracer struct {
 	lights     []Light
 	background canvas.Color
 	bvhTree    BvhTree
-	// ambience   canvas.Color
 }
 
 func NewRaytracer(objects []Object, lights []Light, background canvas.Color) *Raytracer {
@@ -22,7 +21,6 @@ func NewRaytracer(objects []Object, lights []Light, background canvas.Color) *Ra
 }
 
 func (r *Raytracer) Render(view View, canv *canvas.Canvas) {
-	// fmt.Printf("%v\n", r.bvhTree)
 	origin := view.Eye()
 	lineStart := view.BottomLeft()
 

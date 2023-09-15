@@ -8,7 +8,6 @@ import (
 
 	"github.com/b-erhart/raytracer/geometry"
 	"github.com/b-erhart/raytracer/specification"
-	"github.com/b-erhart/raytracer/wavefront"
 )
 
 func main() {
@@ -20,27 +19,27 @@ func main() {
 
 	pprof.StartCPUProfile(f)
 	defer pprof.StopCPUProfile()
-	canv, view, objs, lights, background, err := specification.Read("image.json")
+	canv, view, objs, lights, background, err := specification.Read("SPEC/image.json")
 
 	if err != nil {
-		fmt.Println("error:", err)
+		fmt.Println("[ERROR]", err)
 		os.Exit(2)
 	}
 
 	fmt.Println("Image spec read sucessfully!")
+	//
+	// wavefrontFile := "teapot.obj"
+	// wavefrontObjects, err := wavefront.Read(wavefrontFile, geometry.Vector{X: 0.5, Y: -1, Z: 8}, geometry.Vector{X: 0, Y: 0.15, Z: 0}, 4)
+	// if err != nil {
+	// 	fmt.Printf("%v", err)
+	// 	os.Exit(5)
+	// }
+	//
+	// allObjs := append(wavefrontObjects, objs...)
+	//
+	// fmt.Printf("%s read successfully\n", wavefrontFile)
 
-	wavefrontFile := "teapot.obj"
-	wavefrontObjects, err := wavefront.Read(wavefrontFile, geometry.Vector{X: 0.5, Y: -1, Z: 8}, geometry.Vector{X: 0, Y: 0.15, Z: 0}, 4)
-	if err != nil {
-		fmt.Printf("%v", err)
-		os.Exit(5)
-	}
-
-	allObjs := append(wavefrontObjects, objs...)
-
-	fmt.Printf("%s read successfully\n", wavefrontFile)
-
-	raytracer := geometry.NewRaytracer(allObjs, lights, background)
+	raytracer := geometry.NewRaytracer(objs, lights, background)
 
 	fmt.Println("Rendering image...")
 	start := time.Now()
@@ -52,7 +51,7 @@ func main() {
 	err = canv.WriteToPpm("./output.ppm")
 
 	if err != nil {
-		fmt.Println("error:", err)
+		fmt.Println("[ERROR]", err)
 		os.Exit(1)
 	}
 	fmt.Println("Done!")

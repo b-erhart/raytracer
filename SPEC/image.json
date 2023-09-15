@@ -37,6 +37,13 @@
             "reflectivity": 0.45,
             "mirror": 0.05,
             "specular": 0.05
+        },
+        {
+            "name": "s4",
+            "color": {"r": 30, "g": 160, "b": 135},
+            "reflectivity": 0.45,
+            "mirror": 0,
+            "specular": 0.05
         }
     ],
     "spheres": [
@@ -54,6 +61,15 @@
             "center": {"x": -3, "y": 0, "z": 10},
             "radius": 2,
             "surfaceProp": "s3"
+        }
+    ],
+    "models": [
+        {
+            "path": "./objs/teapot.obj",
+            "size": 4,
+            "center": {"x": 0.5, "y": -1, "z": 8},
+            "rotation": {"x": 0, "y": 0.18, "z": 0},
+            "surfaceProp": "s4"
         }
     ]
 }
