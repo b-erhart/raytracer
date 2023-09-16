@@ -27,17 +27,6 @@ func main() {
 	}
 
 	fmt.Println("Image spec read sucessfully!")
-	//
-	// wavefrontFile := "teapot.obj"
-	// wavefrontObjects, err := wavefront.Read(wavefrontFile, geometry.Vector{X: 0.5, Y: -1, Z: 8}, geometry.Vector{X: 0, Y: 0.15, Z: 0}, 4)
-	// if err != nil {
-	// 	fmt.Printf("%v", err)
-	// 	os.Exit(5)
-	// }
-	//
-	// allObjs := append(wavefrontObjects, objs...)
-	//
-	// fmt.Printf("%s read successfully\n", wavefrontFile)
 
 	raytracer := geometry.NewRaytracer(objs, lights, background)
 

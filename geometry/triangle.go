@@ -10,6 +10,7 @@ type Triangle struct {
 	ASurfaceNormal   Vector
 	BSurfaceNormal   Vector
 	CSurfaceNormal   Vector
+	NormalsSet       bool
 	edgesCalculated  bool
 	edge1            Vector
 	edge2            Vector

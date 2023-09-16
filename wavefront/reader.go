@@ -29,6 +29,7 @@ func Read(path string, origin, rotation geometry.Vector, scaling float64, props 
 	unsups := make([]string, 0, 5)
 	lineNr := 0
 	vs := make([]geometry.Vector, 0, 100)
+	vns := make([]geometry.Vector, 0, 100)
 	fs := make([]geometry.Triangle, 0, 100)
 	minV := geometry.Vector{X: math.MaxInt, Y: math.MaxInt, Z: math.MaxInt}
 	maxV := geometry.Vector{X: math.MinInt, Y: math.MinInt, Z: math.MinInt}
@@ -46,7 +47,7 @@ func Read(path string, origin, rotation geometry.Vector, scaling float64, props 
 		case "#":
 			continue
 		case "v":
-			v, err := readVertex(words)
+			v, err := readVector(words)
 			if err != nil {
 				logger.Printf("line %d: %v\n", lineNr, err)
 				return []geometry.Object{}, err
@@ -55,8 +56,16 @@ func Read(path string, origin, rotation geometry.Vector, scaling float64, props 
 			updateExtremes(&minV, &maxV, v)
 
 			vs = append(vs, v)
+		case "vn":
+			vn, err := readVector(words)
+			if err != nil {
+				logger.Printf("line %d: %v\n", lineNr, err)
+				return []geometry.Object{}, err
+			}
+
+			vns = append(vns, vn)
 		case "f":
-			f, err := readFace(words, vs)
+			f, err := readFace(words, vs, vns)
 			if err != nil {
 				logger.Printf("line %d: %v\n", lineNr, err)
 				return []geometry.Object{}, err
@@ -112,12 +121,16 @@ func Read(path string, origin, rotation geometry.Vector, scaling float64, props 
 	}
 
 	for corner, triangles := range trianglesPerCorner {
-		// group triangles that that don't have a sharp angle beween their normals to prevenet smearing effects
 		for i := 0; i < len(triangles); i++ {
+			if triangles[i].NormalsSet {
+				continue
+			}
+
 			normal := &geometry.Vector{}
 
 			tCount := 0
 
+			// only consider triangles where the angle between normals is > 90°
 			for j := 0; j < len(triangles); j++ {
 				dot := geometry.Dot(triangles[i].TriangleNormal(), triangles[j].TriangleNormal())
 
@@ -135,12 +148,15 @@ func Read(path string, origin, rotation geometry.Vector, scaling float64, props 
 
 			if triangles[i].A == corner {
 				triangles[i].ASurfaceNormal = *normal
+				triangles[i].NormalsSet = true
 			}
 			if triangles[i].B == corner {
 				triangles[i].BSurfaceNormal = *normal
+				triangles[i].NormalsSet = true
 			}
 			if triangles[i].C == corner {
 				triangles[i].CSurfaceNormal = *normal
+				triangles[i].NormalsSet = true
 			}
 		}
 	}
@@ -148,32 +164,30 @@ func Read(path string, origin, rotation geometry.Vector, scaling float64, props 
 	return objs, nil
 }
 
-func readVertex(words []string) (geometry.Vector, error) {
-	if words[0] != "v" {
-		return geometry.Vector{}, fmt.Errorf("invalid vertex definition (line does not start with \"v\")")
-	} else if len(words) < 4 {
+func readVector(words []string) (geometry.Vector, error) {
+	if len(words) < 4 {
 		return geometry.Vector{}, fmt.Errorf("invalid vertex definition (less than 3 elements given)")
 	}
 
 	x, err := strconv.ParseFloat(words[1], 64)
 	if err != nil {
-		return geometry.Vector{}, fmt.Errorf("invalid vertex definition (first element is not a valid number)")
+		return geometry.Vector{}, fmt.Errorf("invalid definition (first element is not a valid number)")
 	}
 
 	y, err := strconv.ParseFloat(words[2], 64)
 	if err != nil {
-		return geometry.Vector{}, fmt.Errorf("invalid vertex definition (second element is not a valid number)")
+		return geometry.Vector{}, fmt.Errorf("invalid definition (second element is not a valid number)")
 	}
 
 	z, err := strconv.ParseFloat(words[3], 64)
 	if err != nil {
-		return geometry.Vector{}, fmt.Errorf("invalid vertex definition (third element is not a valid number)")
+		return geometry.Vector{}, fmt.Errorf("invalid definition (third element is not a valid number)")
 	}
 
 	return geometry.Vector{X: x, Y: y, Z: z}, nil
 }
 
-func readFace(words []string, vs []geometry.Vector) ([]geometry.Triangle, error) {
+func readFace(words []string, vs, vns []geometry.Vector) ([]geometry.Triangle, error) {
 	if words[0] != "f" {
 		return []geometry.Triangle{}, fmt.Errorf("invalid face definition (line does not start with \"v\")")
 	} else if len(words) < 4 {
@@ -184,15 +198,17 @@ func readFace(words []string, vs []geometry.Vector) ([]geometry.Triangle, error)
 	}
 
 	corners := make([]geometry.Vector, 0, 3)
+	normals := make([]geometry.Vector, 0, 3)
 
 	for i := 1; i < len(words); i++ {
-		vIdxStr := strings.Split(words[i], "/")[0]
+		cornerSpec := strings.Split(words[i], "/")
+		vIdxStr := cornerSpec[0]
 		vIdx, err := strconv.ParseInt(vIdxStr, 10, 64)
 		if err != nil {
 			return []geometry.Triangle{}, fmt.Errorf("invalid face definition (element #%d is not a valid number)", i)
 		}
 
-		if int(vIdx) > len(vs) {
+		if vIdx > int64(len(vs)) {
 			return []geometry.Triangle{}, fmt.Errorf("invalid face definition (vertex #%d is referenced but not defined)", vIdx)
 		} else if int(vIdx) == 0 {
 			return []geometry.Triangle{}, fmt.Errorf("invalid face definition (vertex number must be greater than 0)", vIdx)
@@ -203,13 +219,52 @@ func readFace(words []string, vs []geometry.Vector) ([]geometry.Triangle, error)
 		}
 
 		corners = append(corners, vs[vIdx-1])
+
+		if len(cornerSpec) >= 3 {
+			vnIdxStr := cornerSpec[2]
+			vnIdx, err := strconv.ParseInt(vnIdxStr, 10, 64)
+			if err != nil {
+				return []geometry.Triangle{}, fmt.Errorf("invalid face definition (element #%d is not a valid number)", i)
+			}
+
+			if vnIdx > int64(len(vns)) {
+				return []geometry.Triangle{}, fmt.Errorf("invalid face definition (vertex normal #%d is referenced but not defined)", vIdx)
+			} else if int(vnIdx) == 0 {
+				return []geometry.Triangle{}, fmt.Errorf("invalid face definition (vertex normal number must be greater than 0)", vIdx)
+			}
+
+			if vnIdx < 0 {
+				vnIdx = int64(len(vns)) + vnIdx + 1
+			}
+
+			normals = append(normals, vns[vnIdx-1])
+		}
 	}
 
 	triangles := make([]geometry.Triangle, 0, 1)
-	triangles = append(triangles, geometry.Triangle{A: corners[0], B: corners[1], C: corners[2]})
+
+	t := geometry.Triangle{A: corners[0], B: corners[1], C: corners[2]}
+
+	if len(corners) == len(normals) {
+		t.ASurfaceNormal = normals[0]
+		t.BSurfaceNormal = normals[1]
+		t.CSurfaceNormal = normals[2]
+		t.NormalsSet = true
+	}
+
+	triangles = append(triangles, t)
 
 	if len(corners) == 4 {
-		triangles = append(triangles, geometry.Triangle{A: corners[0], B: corners[2], C: corners[3]})
+		t2 := geometry.Triangle{A: corners[0], B: corners[2], C: corners[3]}
+
+		if len(corners) == len(normals) {
+			t2.ASurfaceNormal = normals[0]
+			t2.BSurfaceNormal = normals[1]
+			t2.CSurfaceNormal = normals[2]
+			t2.NormalsSet = true
+		}
+
+		triangles = append(triangles, t2)
 	}
 
 	return triangles, nil
