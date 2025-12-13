@@ -74,7 +74,7 @@ func (t *Triangle) TriangleNormal() Vector {
 		t.calculateEdges()
 	}
 
-	return Cross(t.edge1, t.edge2)
+	return Cross(t.edge1, t.edge2).Normalize()
 }
 
 func (t *Triangle) Props() ObjectProps {

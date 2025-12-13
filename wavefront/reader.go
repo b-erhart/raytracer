@@ -137,11 +137,7 @@ func Read(path string, origin, rotation geometry.Vector, scaling float64, props 
 			triangle.ASurfaceNormal = calculateCornerNormal(triangle.A, triangle, trianglesPerCorner)
 			triangle.BSurfaceNormal = calculateCornerNormal(triangle.B, triangle, trianglesPerCorner)
 			triangle.CSurfaceNormal = calculateCornerNormal(triangle.C, triangle, trianglesPerCorner)
-		} else {
-			fmt.Println("Rotating normal vectors...")
-			triangle.ASurfaceNormal = rotate(triangle.ASurfaceNormal, rotation).Normalize()
-			triangle.BSurfaceNormal = rotate(triangle.BSurfaceNormal, rotation).Normalize()
-			triangle.CSurfaceNormal = rotate(triangle.CSurfaceNormal, rotation).Normalize()
+			triangle.NormalsSet = true
 		}
 	}
 
@@ -156,10 +152,10 @@ func calculateCornerNormal(corner geometry.Vector, triangle *geometry.Triangle, 
 			continue
 		}
 
-		dot := geometry.Dot(triangle.TriangleNormal().Normalize(), otherTriangle.TriangleNormal().Normalize())
+		dot := geometry.Dot(triangle.TriangleNormal(), otherTriangle.TriangleNormal())
 
-		if dot > 0 {
-			normal = geometry.Add(normal, otherTriangle.TriangleNormal().Normalize())
+		if dot > 0+geometry.Epsilon {
+			normal = geometry.Add(normal, otherTriangle.TriangleNormal())
 		}
 	}
 	normal = normal.Normalize()
