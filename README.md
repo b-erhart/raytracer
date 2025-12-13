@@ -17,7 +17,8 @@ Features:
 - [ ] Anti-Aliasing
 - [ ] Diffuse lighting
 - [ ] Refraction
-- [ ] Command line options
+- [ ] JPEG/PNG export
+- [ ] Proper command line interface
 - [ ] ...
 
 Example rendering of an image with the current implementation (converted to PNG):
