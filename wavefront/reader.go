@@ -91,21 +91,21 @@ func Read(path string, origin, rotation geometry.Vector, scaling float64, props 
 	size := math.Max(maxV.X-minV.X, math.Max(maxV.Y-minV.Y, maxV.Z-minV.Z))
 	scalingFactor := scaling / size
 
-	for i := 0; i < len(fs); i++ {
+	for _, f := range fs {
 		a := geometry.Vector{
-			X: ((fs[i].A.X + centering.X) * scalingFactor),
-			Y: ((fs[i].A.Y + centering.Y) * scalingFactor),
-			Z: ((fs[i].A.Z + centering.Z) * scalingFactor),
+			X: ((f.A.X + centering.X) * scalingFactor),
+			Y: ((f.A.Y + centering.Y) * scalingFactor),
+			Z: ((f.A.Z + centering.Z) * scalingFactor),
 		}
 		b := geometry.Vector{
-			X: ((fs[i].B.X + centering.X) * scalingFactor),
-			Y: ((fs[i].B.Y + centering.Y) * scalingFactor),
-			Z: ((fs[i].B.Z + centering.Z) * scalingFactor),
+			X: ((f.B.X + centering.X) * scalingFactor),
+			Y: ((f.B.Y + centering.Y) * scalingFactor),
+			Z: ((f.B.Z + centering.Z) * scalingFactor),
 		}
 		c := geometry.Vector{
-			X: ((fs[i].C.X + centering.X) * scalingFactor),
-			Y: ((fs[i].C.Y + centering.Y) * scalingFactor),
-			Z: ((fs[i].C.Z + centering.Z) * scalingFactor),
+			X: ((f.C.X + centering.X) * scalingFactor),
+			Y: ((f.C.Y + centering.Y) * scalingFactor),
+			Z: ((f.C.Z + centering.Z) * scalingFactor),
 		}
 
 		a = geometry.Add(rotate(a, rotation), origin)
@@ -113,6 +113,13 @@ func Read(path string, origin, rotation geometry.Vector, scaling float64, props 
 		c = geometry.Add(rotate(c, rotation), origin)
 
 		triangle := &geometry.Triangle{A: a, B: b, C: c, Properties: props}
+
+		if f.NormalsSet {
+			triangle.ASurfaceNormal = rotate(f.ASurfaceNormal, rotation).Normalize()
+			triangle.BSurfaceNormal = rotate(f.BSurfaceNormal, rotation).Normalize()
+			triangle.CSurfaceNormal = rotate(f.CSurfaceNormal, rotation).Normalize()
+			triangle.NormalsSet = true
+		}
 
 		objs = append(objs, triangle)
 		trianglesPerCorner[a] = append(trianglesPerCorner[a], triangle)
@@ -126,9 +133,16 @@ func Read(path string, origin, rotation geometry.Vector, scaling float64, props 
 			continue
 		}
 
-		triangle.ASurfaceNormal = calculateCornerNormal(triangle.A, triangle, trianglesPerCorner)
-		triangle.BSurfaceNormal = calculateCornerNormal(triangle.B, triangle, trianglesPerCorner)
-		triangle.CSurfaceNormal = calculateCornerNormal(triangle.C, triangle, trianglesPerCorner)
+		if !triangle.NormalsSet {
+			triangle.ASurfaceNormal = calculateCornerNormal(triangle.A, triangle, trianglesPerCorner)
+			triangle.BSurfaceNormal = calculateCornerNormal(triangle.B, triangle, trianglesPerCorner)
+			triangle.CSurfaceNormal = calculateCornerNormal(triangle.C, triangle, trianglesPerCorner)
+		} else {
+			fmt.Println("Rotating normal vectors...")
+			triangle.ASurfaceNormal = rotate(triangle.ASurfaceNormal, rotation).Normalize()
+			triangle.BSurfaceNormal = rotate(triangle.BSurfaceNormal, rotation).Normalize()
+			triangle.CSurfaceNormal = rotate(triangle.CSurfaceNormal, rotation).Normalize()
+		}
 	}
 
 	return objs, nil
@@ -200,7 +214,7 @@ func readFace(words []string, vs, vns []geometry.Vector) ([]geometry.Triangle, e
 		if vIdx > int64(len(vs)) {
 			return []geometry.Triangle{}, fmt.Errorf("invalid face definition (vertex #%d is referenced but not defined)", vIdx)
 		} else if int(vIdx) == 0 {
-			return []geometry.Triangle{}, fmt.Errorf("invalid face definition (vertex number must be greater than 0)", vIdx)
+			return []geometry.Triangle{}, fmt.Errorf("invalid face definition (vertex number must be greater than 0 but is %d)", vIdx)
 		}
 
 		if vIdx < 0 {
@@ -248,8 +262,8 @@ func readFace(words []string, vs, vns []geometry.Vector) ([]geometry.Triangle, e
 
 		if len(corners) == len(normals) {
 			t2.ASurfaceNormal = normals[0]
-			t2.BSurfaceNormal = normals[1]
-			t2.CSurfaceNormal = normals[2]
+			t2.BSurfaceNormal = normals[2]
+			t2.CSurfaceNormal = normals[3]
 			t2.NormalsSet = true
 		}
 
