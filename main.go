@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
 	"runtime/pprof"
 	"time"
@@ -13,8 +13,7 @@ import (
 func main() {
 	f, err := os.Create("raytracer.prof")
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Fatalf("failed to create profiling file: %v", err)
 	}
 
 	pprof.StartCPUProfile(f)
@@ -22,34 +21,31 @@ func main() {
 	canv, view, objs, lights, background, ssaa, err := specification.Read("SPEC/image.json")
 
 	if err != nil {
-		fmt.Println("[ERROR]", err)
-		os.Exit(2)
+		log.Fatalf("failed to read image specification: %v", err)
 	}
 
-	fmt.Println("Image spec read sucessfully!")
+	log.Println("Image spec read sucessfully!")
 
 	if ssaa {
-		fmt.Println("SSAA enabled - rendering at doubled resolution...")
+		log.Println("SSAA enabled - rendering at doubled resolution...")
 	}
 
 	raytracer := geometry.NewRaytracer(objs, lights, background)
 
-	fmt.Println("Rendering image...")
+	log.Println("Rendering image...")
 	start := time.Now()
 	raytracer.Render(view, &canv)
 	elapsed := time.Since(start)
-	fmt.Printf("Rendering done! (took %s)\n", elapsed)
-
+	log.Printf("Rendering done! (took %s)\n", elapsed)
 	if ssaa {
 		canv = *canv.ApplySSAA()
 	}
 
-	fmt.Println("Writing PPM file...")
+	log.Println("Writing PPM file...")
 	err = canv.WriteToPpm("./output.ppm")
 
 	if err != nil {
-		fmt.Println("[ERROR]", err)
-		os.Exit(1)
+		log.Fatalf("failed to write PPM file: %v", err)
 	}
-	fmt.Println("Done!")
+	log.Println("Done!")
 }
