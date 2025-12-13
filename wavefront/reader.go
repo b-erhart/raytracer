@@ -26,7 +26,7 @@ func Read(path string, origin, rotation geometry.Vector, scaling float64, props 
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
 
-	unsups := make([]string, 0, 5)
+	unsupportedDirectives := make([]string, 0, 5)
 	lineNr := 0
 	vs := make([]geometry.Vector, 0, 100)
 	vns := make([]geometry.Vector, 0, 100)
@@ -73,9 +73,9 @@ func Read(path string, origin, rotation geometry.Vector, scaling float64, props 
 
 			fs = append(fs, f...)
 		default:
-			if !slices.Contains(unsups, words[0]) {
+			if !slices.Contains(unsupportedDirectives, words[0]) {
 				logger.Printf("unsupported directive \"%s\" found - will be ignored\n", words[0])
-				unsups = append(unsups, words[0])
+				unsupportedDirectives = append(unsupportedDirectives, words[0])
 			}
 		}
 	}
@@ -120,48 +120,37 @@ func Read(path string, origin, rotation geometry.Vector, scaling float64, props 
 		trianglesPerCorner[c] = append(trianglesPerCorner[c], triangle)
 	}
 
-	for corner, triangles := range trianglesPerCorner {
-		for i := 0; i < len(triangles); i++ {
-			if triangles[i].NormalsSet {
-				continue
-			}
-
-			normal := &geometry.Vector{}
-
-			tCount := 0
-
-			// only consider triangles where the angle between normals is > 90°
-			for j := 0; j < len(triangles); j++ {
-				dot := geometry.Dot(triangles[i].TriangleNormal(), triangles[j].TriangleNormal())
-
-				if dot > 0 || i == j {
-					tCount += 1
-					normal.X += triangles[j].TriangleNormal().X
-					normal.Y += triangles[j].TriangleNormal().Y
-					normal.Z += triangles[j].TriangleNormal().Z
-				}
-			}
-
-			normal.X /= float64(tCount)
-			normal.Y /= float64(tCount)
-			normal.Z /= float64(tCount)
-
-			if triangles[i].A == corner {
-				triangles[i].ASurfaceNormal = *normal
-				triangles[i].NormalsSet = true
-			}
-			if triangles[i].B == corner {
-				triangles[i].BSurfaceNormal = *normal
-				triangles[i].NormalsSet = true
-			}
-			if triangles[i].C == corner {
-				triangles[i].CSurfaceNormal = *normal
-				triangles[i].NormalsSet = true
-			}
+	for _, obj := range objs {
+		triangle, isTriangle := obj.(*geometry.Triangle)
+		if !isTriangle {
+			continue
 		}
+
+		triangle.ASurfaceNormal = calculateCornerNormal(triangle.A, triangle, trianglesPerCorner)
+		triangle.BSurfaceNormal = calculateCornerNormal(triangle.B, triangle, trianglesPerCorner)
+		triangle.CSurfaceNormal = calculateCornerNormal(triangle.C, triangle, trianglesPerCorner)
 	}
 
 	return objs, nil
+}
+
+func calculateCornerNormal(corner geometry.Vector, triangle *geometry.Triangle, trianglesPerCorner map[geometry.Vector][]*geometry.Triangle) geometry.Vector {
+	normal := triangle.TriangleNormal()
+
+	for _, otherTriangle := range trianglesPerCorner[corner] {
+		if otherTriangle == triangle {
+			continue
+		}
+
+		dot := geometry.Dot(triangle.TriangleNormal().Normalize(), otherTriangle.TriangleNormal().Normalize())
+
+		if dot > 0 {
+			normal = geometry.Add(normal, otherTriangle.TriangleNormal().Normalize())
+		}
+	}
+	normal = normal.Normalize()
+
+	return normal
 }
 
 func readVector(words []string) (geometry.Vector, error) {

@@ -65,7 +65,8 @@ func (t *Triangle) calculateEdges() {
 func (t *Triangle) SurfaceNormal(point Vector) Vector {
 	bary := t.bary(point)
 
-	return Add(Add(Sprod(t.ASurfaceNormal, bary.X), Sprod(t.BSurfaceNormal, bary.Y)), Sprod(t.CSurfaceNormal, bary.Z))
+	interpolated := Add(Add(Sprod(t.ASurfaceNormal, bary.X), Sprod(t.BSurfaceNormal, bary.Y)), Sprod(t.CSurfaceNormal, bary.Z))
+	return interpolated.Normalize()
 }
 
 func (t *Triangle) TriangleNormal() Vector {
