@@ -13,6 +13,7 @@ type ImageSpec struct {
 	Spheres      []Sphere
 	Triangles    []Triangle
 	Models       []ObjModel
+	SSAA         bool
 }
 
 type Camera struct {
@@ -50,5 +51,5 @@ type ObjModel struct {
 	Size        float64         `validate:"required"`
 	Center      geometry.Vector `validate:"required"`
 	Rotation    geometry.Vector
-	SurfaceProp string          `validate:"required"`
+	SurfaceProp string `validate:"required"`
 }

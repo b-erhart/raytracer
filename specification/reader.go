@@ -13,13 +13,23 @@ import (
 )
 
 func (s ImageSpec) canvas() canvas.Canvas {
-	return *canvas.NewCanvas(s.Camera.Resolution.Width, s.Camera.Resolution.Height)
+	factor := 1
+
+	if s.SSAA {
+		factor = 2
+	}
+
+	return *canvas.NewCanvas(s.Camera.Resolution.Width*factor, s.Camera.Resolution.Height*factor)
 }
 
 func (s ImageSpec) view() geometry.View {
+	factor := 1
+	if s.SSAA {
+		factor = 2
+	}
 	return geometry.NewView(
-		s.Camera.Resolution.Width,
-		s.Camera.Resolution.Height,
+		s.Camera.Resolution.Width*factor,
+		s.Camera.Resolution.Height*factor,
 		s.Camera.Position,
 		s.Camera.LookAt,
 		s.Camera.Up,
@@ -111,37 +121,37 @@ func (s ImageSpec) objects(specFilePath string) ([]geometry.Object, error) {
 	return objs, nil
 }
 
-func Read(path string) (canvas.Canvas, geometry.View, []geometry.Object, []geometry.Light, canvas.Color, error) {
+func Read(path string) (canvas.Canvas, geometry.View, []geometry.Object, []geometry.Light, canvas.Color, bool, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return canvas.Canvas{}, geometry.View{}, []geometry.Object{}, []geometry.Light{}, canvas.Color{}, err
+		return canvas.Canvas{}, geometry.View{}, []geometry.Object{}, []geometry.Light{}, canvas.Color{}, false, err
 	}
 
 	defer file.Close()
 
 	jsonBytes, err := io.ReadAll(file)
 	if err != nil {
-		return canvas.Canvas{}, geometry.View{}, []geometry.Object{}, []geometry.Light{}, canvas.Color{}, err
+		return canvas.Canvas{}, geometry.View{}, []geometry.Object{}, []geometry.Light{}, canvas.Color{}, false, err
 	}
 
 	valid := json.Valid(jsonBytes)
 	if !valid {
 		err = fmt.Errorf("the specification in %s is not valid", path)
-		return canvas.Canvas{}, geometry.View{}, []geometry.Object{}, []geometry.Light{}, canvas.Color{}, err
+		return canvas.Canvas{}, geometry.View{}, []geometry.Object{}, []geometry.Light{}, canvas.Color{}, false, err
 	}
 
-	var spec ImageSpec
+	spec := ImageSpec{}
 
 	err = json.Unmarshal(jsonBytes, &spec)
 
 	if err != nil {
-		return canvas.Canvas{}, geometry.View{}, []geometry.Object{}, []geometry.Light{}, canvas.Color{}, err
+		return canvas.Canvas{}, geometry.View{}, []geometry.Object{}, []geometry.Light{}, canvas.Color{}, false, err
 	}
 
 	objs, err := spec.objects(path)
 	if err != nil {
-		return canvas.Canvas{}, geometry.View{}, []geometry.Object{}, []geometry.Light{}, canvas.Color{}, err
+		return canvas.Canvas{}, geometry.View{}, []geometry.Object{}, []geometry.Light{}, canvas.Color{}, false, err
 	}
 
-	return spec.canvas(), spec.view(), objs, spec.Lights, spec.Background, nil
+	return spec.canvas(), spec.view(), objs, spec.Lights, spec.Background, spec.SSAA, nil
 }

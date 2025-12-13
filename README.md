@@ -13,8 +13,8 @@ Features:
 - [x] Basic support for wavefront (.obj) models (not all models are supported yet)
 - [x] Bounding volume hierarchy for improved rendering times
 - [x] Phong shading
+- [x] SSAA Anti-Aliasing
 - [ ] Full wavefront support
-- [ ] Anti-Aliasing
 - [ ] Diffuse lighting
 - [ ] Refraction
 - [ ] JPEG/PNG export

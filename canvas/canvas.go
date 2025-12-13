@@ -67,6 +67,24 @@ func (canvas *Canvas) SetColor(x, y int, color Color) error {
 	return canvas.SetRGB(x, y, color.R, color.G, color.B)
 }
 
+func (canvas *Canvas) ApplySSAA() *Canvas {
+	newCanvas := NewCanvas(canvas.width/2, canvas.height/2)
+
+	for i := 0; i < newCanvas.width; i++ {
+		for j := 0; j < newCanvas.height; j++ {
+			newCanvas.R[i][j] = averageBytes(canvas.R[i*2][j*2], canvas.R[i*2+1][j*2], canvas.R[i*2][j*2+1], canvas.R[i*2+1][j*2+1])
+			newCanvas.G[i][j] = averageBytes(canvas.G[i*2][j*2], canvas.G[i*2+1][j*2], canvas.G[i*2][j*2+1], canvas.G[i*2+1][j*2+1])
+			newCanvas.B[i][j] = averageBytes(canvas.B[i*2][j*2], canvas.B[i*2+1][j*2], canvas.B[i*2][j*2+1], canvas.B[i*2+1][j*2+1])
+		}
+	}
+
+	return newCanvas
+}
+
+func averageBytes(a, b, c, d uint8) uint8 {
+	return uint8((uint32(a) + uint32(b) + uint32(c) + uint32(d)) / 4)
+}
+
 // Write the canvas to a PPM (P6) file. If a file exists at the given path, it
 // is moved to "<path>.bak". Return an error if writing the file fails.
 func (canvas *Canvas) WriteToPpm(path string) error {
