@@ -65,7 +65,7 @@
     ],
     "models": [
         {
-            "path": "./objs/hand.obj",
+            "path": "./objs/teapot.obj",
             "size": 3,
             "center": {"x": 0.5, "y": -1, "z": 8},
             "rotation": {"x": 0, "y": 0.3, "z": 0},
