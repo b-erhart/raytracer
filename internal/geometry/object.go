@@ -1,6 +1,6 @@
 package geometry
 
-import "github.com/b-erhart/raytracer/canvas"
+import "github.com/b-erhart/raytracer/internal/canvas"
 
 type Object interface {
 	Intersection(ray Ray) (bool, float64)

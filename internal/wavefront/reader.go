@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/b-erhart/raytracer/geometry"
+	"github.com/b-erhart/raytracer/internal/geometry"
 )
 
 func Read(path string, origin, rotation geometry.Vector, scaling float64, props geometry.ObjectProps) ([]geometry.Object, error) {

@@ -1,8 +1,8 @@
 package specification
 
 import (
-	"github.com/b-erhart/raytracer/canvas"
-	"github.com/b-erhart/raytracer/geometry"
+	"github.com/b-erhart/raytracer/internal/canvas"
+	"github.com/b-erhart/raytracer/internal/geometry"
 )
 
 type ImageSpec struct {

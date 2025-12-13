@@ -1,7 +1,7 @@
 package geometry
 
 import (
-	"github.com/b-erhart/raytracer/canvas"
+	"github.com/b-erhart/raytracer/internal/canvas"
 )
 
 type Light struct {

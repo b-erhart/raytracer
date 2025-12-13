@@ -7,9 +7,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/b-erhart/raytracer/canvas"
-	"github.com/b-erhart/raytracer/geometry"
-	"github.com/b-erhart/raytracer/wavefront"
+	"github.com/b-erhart/raytracer/internal/canvas"
+	"github.com/b-erhart/raytracer/internal/geometry"
+	"github.com/b-erhart/raytracer/internal/wavefront"
 )
 
 func (s ImageSpec) canvas() canvas.Canvas {

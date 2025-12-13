@@ -4,7 +4,7 @@ import (
 	"math"
 	"sync"
 
-	"github.com/b-erhart/raytracer/canvas"
+	"github.com/b-erhart/raytracer/internal/canvas"
 )
 
 const Epsilon = 0.0000001

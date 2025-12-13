@@ -6,8 +6,8 @@ import (
 	"runtime/pprof"
 	"time"
 
-	"github.com/b-erhart/raytracer/geometry"
-	"github.com/b-erhart/raytracer/specification"
+	"github.com/b-erhart/raytracer/internal/geometry"
+	"github.com/b-erhart/raytracer/internal/specification"
 )
 
 func main() {

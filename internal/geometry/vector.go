@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/b-erhart/raytracer/canvas"
+	"github.com/b-erhart/raytracer/internal/canvas"
 )
 
 // 3-dimensional vector.
