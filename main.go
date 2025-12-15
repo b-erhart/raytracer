@@ -18,7 +18,7 @@ func main() {
 
 	pprof.StartCPUProfile(f)
 	defer pprof.StopCPUProfile()
-	canv, view, objs, lights, background, ssaa, err := specification.Read("SPEC/image.json")
+	scene, err := specification.CreateSceneFromSpecFile("SPEC/image.json")
 
 	if err != nil {
 		log.Fatalf("failed to read image specification: %v", err)
@@ -26,23 +26,23 @@ func main() {
 
 	log.Println("Image spec read sucessfully!")
 
-	if ssaa {
+	if scene.SSAA {
 		log.Println("SSAA enabled - rendering at doubled resolution...")
 	}
 
-	raytracer := geometry.NewRaytracer(objs, lights, background)
+	raytracer := geometry.NewRaytracer(scene.Objects, scene.Lights, scene.Background)
 
 	log.Println("Rendering image...")
 	start := time.Now()
-	raytracer.Render(view, &canv)
+	raytracer.Render(scene.View, &scene.Canvas)
 	elapsed := time.Since(start)
 	log.Printf("Rendering done! (took %s)\n", elapsed)
-	if ssaa {
-		canv = *canv.ApplySSAA()
+	if scene.SSAA {
+		scene.Canvas = *scene.Canvas.ApplySSAA()
 	}
 
 	log.Println("Writing PPM file...")
-	err = canv.WriteToPpm("./output.ppm")
+	err = scene.Canvas.WriteToPpm("./output.ppm")
 
 	if err != nil {
 		log.Fatalf("failed to write PPM file: %v", err)

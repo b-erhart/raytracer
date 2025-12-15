@@ -12,9 +12,62 @@ import (
 	"github.com/b-erhart/raytracer/internal/wavefront"
 )
 
-func (s ImageSpec) canvas() canvas.Canvas {
-	factor := 1
+func CreateSceneFromSpecFile(path string) (geometry.Scene, error) {
+	spec, err := readSpecFromFile(path)
+	if err != nil {
+		return geometry.Scene{}, err
+	}
 
+	objects, err := spec.createObjects(path)
+	if err != nil {
+		return geometry.Scene{}, err
+	}
+
+	return geometry.Scene{
+		Canvas:     spec.createCanvas(),
+		View:       spec.createView(),
+		Objects:    objects,
+		Lights:     spec.Lights,
+		Background: spec.Background,
+		SSAA:       spec.SSAA,
+	}, nil
+}
+
+func readSpecFromFile(path string) (ImageSpec, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return ImageSpec{}, err
+	}
+
+	defer file.Close()
+
+	jsonBytes, err := io.ReadAll(file)
+	if err != nil {
+		return ImageSpec{}, err
+	}
+
+	valid := json.Valid(jsonBytes)
+	if !valid {
+		err = fmt.Errorf("the specification in %s is not valid", path)
+		return ImageSpec{}, err
+	}
+
+	spec := ImageSpec{}
+	err = json.Unmarshal(jsonBytes, &spec)
+	if err != nil {
+		return ImageSpec{}, err
+	}
+
+	err = spec.Validate()
+	if err != nil {
+		return ImageSpec{}, err
+	}
+
+	return spec, nil
+}
+
+func (s ImageSpec) createCanvas() canvas.Canvas {
+	factor := 1
 	if s.SSAA {
 		factor = 2
 	}
@@ -22,11 +75,12 @@ func (s ImageSpec) canvas() canvas.Canvas {
 	return *canvas.NewCanvas(s.Camera.Resolution.Width*factor, s.Camera.Resolution.Height*factor)
 }
 
-func (s ImageSpec) view() geometry.View {
+func (s ImageSpec) createView() geometry.View {
 	factor := 1
 	if s.SSAA {
 		factor = 2
 	}
+
 	return geometry.NewView(
 		s.Camera.Resolution.Width*factor,
 		s.Camera.Resolution.Height*factor,
@@ -37,14 +91,43 @@ func (s ImageSpec) view() geometry.View {
 	)
 }
 
-func (s ImageSpec) objects(specFilePath string) ([]geometry.Object, error) {
-	props := make(map[string]geometry.ObjectProps, len(s.SurfaceProps))
+func (s ImageSpec) createObjects(specFilePath string) ([]geometry.Object, error) {
+	props, err := createObjectProps(s.SurfaceProps)
+	if err != nil {
+		return []geometry.Object{}, err
+	}
 
-	for _, prop := range s.SurfaceProps {
+	sphereObjects, err := createSphereObjects(s.Spheres, props)
+	if err != nil {
+		return []geometry.Object{}, err
+	}
+
+	triangleObjects, err := createTriangleObjects(s.Triangles, props)
+	if err != nil {
+		return []geometry.Object{}, err
+	}
+
+	wavefrontModelObjects, err := createWavefrontModelObjects(s.Models, specFilePath, props)
+	if err != nil {
+		return []geometry.Object{}, err
+	}
+
+	objs := make([]geometry.Object, 0, len(sphereObjects)+len(triangleObjects)+len(wavefrontModelObjects))
+	objs = append(objs, sphereObjects...)
+	objs = append(objs, triangleObjects...)
+	objs = append(objs, wavefrontModelObjects...)
+
+	return objs, nil
+}
+
+func createObjectProps(surfacePropSpecs []SurfacePropSpec) (map[string]geometry.ObjectProps, error) {
+	props := make(map[string]geometry.ObjectProps, len(surfacePropSpecs))
+
+	for _, prop := range surfacePropSpecs {
 		_, exists := props[prop.Name]
 		if exists {
-			return []geometry.Object{}, fmt.Errorf(
-				"multiple surface properties with name \"%s\" defined - name must be unique",
+			return nil, fmt.Errorf(
+				"multiple surface properties with name \"%s\" defined but name must be unique",
 				prop.Name,
 			)
 		}
@@ -57,34 +140,44 @@ func (s ImageSpec) objects(specFilePath string) ([]geometry.Object, error) {
 		}
 	}
 
-	objs := make([]geometry.Object, 0, len(s.Spheres)+len(s.Triangles))
+	return props, nil
+}
 
-	for _, sphere := range s.Spheres {
+func createSphereObjects(sphereSpecs []SphereSpec, props map[string]geometry.ObjectProps) ([]geometry.Object, error) {
+	sphereObjects := make([]geometry.Object, 0, len(sphereSpecs))
+
+	for _, sphere := range sphereSpecs {
 		prop, exists := props[sphere.SurfaceProp]
 		if !exists {
 			return []geometry.Object{}, fmt.Errorf(
-				"surface properties with name \"%s\" do not exists but are assigned to a sphere",
+				"surface properties with name \"%s\" do not exist but are assigned to a sphere",
 				sphere.SurfaceProp,
 			)
 		}
 
-		objs = append(objs, &geometry.Sphere{
+		sphereObjects = append(sphereObjects, &geometry.Sphere{
 			Center:     sphere.Center,
 			Radius:     sphere.Radius,
 			Properties: prop,
 		})
 	}
 
-	for _, triangle := range s.Triangles {
+	return sphereObjects, nil
+}
+
+func createTriangleObjects(triangleSpecs []TriangleSpec, props map[string]geometry.ObjectProps) ([]geometry.Object, error) {
+	triangleObjects := make([]geometry.Object, 0, len(triangleSpecs))
+
+	for _, triangle := range triangleSpecs {
 		prop, exists := props[triangle.SurfaceProp]
 		if !exists {
 			return []geometry.Object{}, fmt.Errorf(
-				"surface properties with name \"%s\" do not exist but are assigned to a sphere",
+				"surface properties with name \"%s\" do not exist but are assigned to a triangle",
 				triangle.SurfaceProp,
 			)
 		}
 
-		objs = append(objs, &geometry.Triangle{
+		triangleObjects = append(triangleObjects, &geometry.Triangle{
 			A:          triangle.Corners[0],
 			B:          triangle.Corners[1],
 			C:          triangle.Corners[2],
@@ -92,17 +185,22 @@ func (s ImageSpec) objects(specFilePath string) ([]geometry.Object, error) {
 		})
 	}
 
-	for _, objModel := range s.Models {
+	return triangleObjects, nil
+}
+
+func createWavefrontModelObjects(modelSpecs []WavefrontModelSpec, specFilePath string, props map[string]geometry.ObjectProps) ([]geometry.Object, error) {
+	wavefrontObjects := make([]geometry.Object, 0)
+
+	for _, objModel := range modelSpecs {
 		prop, exists := props[objModel.SurfaceProp]
 		if !exists {
 			return []geometry.Object{}, fmt.Errorf(
-				"surface properties with name \"%s\" do not exist but are assigned to a sphere",
+				"surface properties with name \"%s\" do not exist but are assigned to a wavefront model",
 				objModel.SurfaceProp,
 			)
 		}
 
 		absoluteSpecPath, err := filepath.Abs(specFilePath)
-
 		if err != nil {
 			return []geometry.Object{}, err
 		}
@@ -115,43 +213,8 @@ func (s ImageSpec) objects(specFilePath string) ([]geometry.Object, error) {
 			return []geometry.Object{}, err
 		}
 
-		objs = append(objs, wavefrontObjs...)
+		wavefrontObjects = append(wavefrontObjects, wavefrontObjs...)
 	}
 
-	return objs, nil
-}
-
-func Read(path string) (canvas.Canvas, geometry.View, []geometry.Object, []geometry.Light, canvas.Color, bool, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return canvas.Canvas{}, geometry.View{}, []geometry.Object{}, []geometry.Light{}, canvas.Color{}, false, err
-	}
-
-	defer file.Close()
-
-	jsonBytes, err := io.ReadAll(file)
-	if err != nil {
-		return canvas.Canvas{}, geometry.View{}, []geometry.Object{}, []geometry.Light{}, canvas.Color{}, false, err
-	}
-
-	valid := json.Valid(jsonBytes)
-	if !valid {
-		err = fmt.Errorf("the specification in %s is not valid", path)
-		return canvas.Canvas{}, geometry.View{}, []geometry.Object{}, []geometry.Light{}, canvas.Color{}, false, err
-	}
-
-	spec := ImageSpec{}
-
-	err = json.Unmarshal(jsonBytes, &spec)
-
-	if err != nil {
-		return canvas.Canvas{}, geometry.View{}, []geometry.Object{}, []geometry.Light{}, canvas.Color{}, false, err
-	}
-
-	objs, err := spec.objects(path)
-	if err != nil {
-		return canvas.Canvas{}, geometry.View{}, []geometry.Object{}, []geometry.Light{}, canvas.Color{}, false, err
-	}
-
-	return spec.canvas(), spec.view(), objs, spec.Lights, spec.Background, spec.SSAA, nil
+	return wavefrontObjects, nil
 }
