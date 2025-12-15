@@ -18,14 +18,24 @@ func CreateSceneFromSpecFile(path string) (geometry.Scene, error) {
 		return geometry.Scene{}, err
 	}
 
-	objects, err := spec.createObjects(path)
+	objects, err := createObjects(spec, path)
 	if err != nil {
 		return geometry.Scene{}, err
 	}
 
+	canvasWidth := spec.Camera.Resolution.Width
+	canvasHeight := spec.Camera.Resolution.Height
+	if spec.SSAA {
+		canvasWidth *= 2
+		canvasHeight *= 2
+	}
+
+	canv := canvas.NewCanvas(canvasWidth, canvasHeight)
+	view := geometry.NewView(canvasWidth, canvasHeight, spec.Camera.Position, spec.Camera.LookAt, spec.Camera.Up, spec.Camera.Fov)
+
 	return geometry.Scene{
-		Canvas:     spec.createCanvas(),
-		View:       spec.createView(),
+		Canvas:     canv,
+		View:       view,
 		Objects:    objects,
 		Lights:     spec.Lights,
 		Background: spec.Background,
@@ -66,32 +76,7 @@ func readSpecFromFile(path string) (ImageSpec, error) {
 	return spec, nil
 }
 
-func (s ImageSpec) createCanvas() canvas.Canvas {
-	factor := 1
-	if s.SSAA {
-		factor = 2
-	}
-
-	return *canvas.NewCanvas(s.Camera.Resolution.Width*factor, s.Camera.Resolution.Height*factor)
-}
-
-func (s ImageSpec) createView() geometry.View {
-	factor := 1
-	if s.SSAA {
-		factor = 2
-	}
-
-	return geometry.NewView(
-		s.Camera.Resolution.Width*factor,
-		s.Camera.Resolution.Height*factor,
-		s.Camera.Position,
-		s.Camera.LookAt,
-		s.Camera.Up,
-		s.Camera.Fov,
-	)
-}
-
-func (s ImageSpec) createObjects(specFilePath string) ([]geometry.Object, error) {
+func createObjects(s ImageSpec, specFilePath string) ([]geometry.Object, error) {
 	props, err := createObjectProps(s.SurfaceProps)
 	if err != nil {
 		return []geometry.Object{}, err

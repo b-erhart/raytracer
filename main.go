@@ -34,11 +34,11 @@ func main() {
 
 	log.Println("Rendering image...")
 	start := time.Now()
-	raytracer.Render(scene.View, &scene.Canvas)
+	raytracer.Render(scene.View, scene.Canvas)
 	elapsed := time.Since(start)
 	log.Printf("Rendering done! (took %s)\n", elapsed)
 	if scene.SSAA {
-		scene.Canvas = *scene.Canvas.ApplySSAA()
+		scene.Canvas = scene.Canvas.CreateSSAACanvas()
 	}
 
 	log.Println("Writing PPM file...")
