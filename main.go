@@ -24,7 +24,7 @@ func main() {
 		log.Fatalf("failed to read image specification: %v", err)
 	}
 
-	log.Println("Image spec read sucessfully!")
+	log.Println("Image spec read successfully!")
 
 	if scene.SSAA {
 		log.Println("SSAA enabled - rendering at doubled resolution...")

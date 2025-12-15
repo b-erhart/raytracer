@@ -20,7 +20,7 @@ func NewRaytracer(objects []Object, lights []Light, background canvas.Color) *Ra
 	return &Raytracer{objects, lights, background, ConstructBvhTree(objects)}
 }
 
-func (r *Raytracer) Render(view View, canv canvas.Canvas) {
+func (r *Raytracer) Render(view View, canv *canvas.Canvas) {
 	origin := view.Eye()
 	lineStart := view.BottomLeft()
 

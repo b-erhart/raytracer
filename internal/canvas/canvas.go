@@ -19,7 +19,7 @@ type Canvas struct {
 
 // Create a new canvas with specified width and height. Initialize R, G and B
 // slices accordingly.
-func NewCanvas(width, height int) Canvas {
+func NewCanvas(width, height int) *Canvas {
 	if width <= 0 || height <= 0 {
 		panic("canvas width and height must be greater than 0")
 	}
@@ -36,7 +36,7 @@ func NewCanvas(width, height int) Canvas {
 		canvas.B[i] = make([]uint8, height)
 	}
 
-	return canvas
+	return &canvas
 }
 
 // Get canvas width in pixels.
@@ -67,7 +67,7 @@ func (canvas *Canvas) SetColor(x, y int, color Color) error {
 	return canvas.SetRGB(x, y, color.R, color.G, color.B)
 }
 
-func (canvas *Canvas) CreateSSAACanvas() Canvas {
+func (canvas *Canvas) CreateSSAACanvas() *Canvas {
 	newCanvas := NewCanvas(canvas.width/2, canvas.height/2)
 
 	for i := 0; i < newCanvas.width; i++ {

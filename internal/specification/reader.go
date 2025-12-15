@@ -15,12 +15,12 @@ import (
 func CreateSceneFromSpecFile(path string) (geometry.Scene, error) {
 	spec, err := readSpecFromFile(path)
 	if err != nil {
-		return geometry.Scene{}, err
+		return geometry.Scene{}, fmt.Errorf("failed to read image specification: %w", err)
 	}
 
 	objects, err := createObjects(spec, path)
 	if err != nil {
-		return geometry.Scene{}, err
+		return geometry.Scene{}, fmt.Errorf("failed to create objects: %w", err)
 	}
 
 	canvasWidth := spec.Camera.Resolution.Width
@@ -46,31 +46,25 @@ func CreateSceneFromSpecFile(path string) (geometry.Scene, error) {
 func readSpecFromFile(path string) (ImageSpec, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return ImageSpec{}, err
+		return ImageSpec{}, fmt.Errorf("failed to open specification file: %w", err)
 	}
 
 	defer file.Close()
 
 	jsonBytes, err := io.ReadAll(file)
 	if err != nil {
-		return ImageSpec{}, err
-	}
-
-	valid := json.Valid(jsonBytes)
-	if !valid {
-		err = fmt.Errorf("the specification in %s is not valid", path)
-		return ImageSpec{}, err
+		return ImageSpec{}, fmt.Errorf("failed to read specification file: %w", err)
 	}
 
 	spec := ImageSpec{}
 	err = json.Unmarshal(jsonBytes, &spec)
 	if err != nil {
-		return ImageSpec{}, err
+		return ImageSpec{}, fmt.Errorf("failed to parse spec JSON: %w", err)
 	}
 
 	err = spec.Validate()
 	if err != nil {
-		return ImageSpec{}, err
+		return ImageSpec{}, fmt.Errorf("failed to validate specification: %w", err)
 	}
 
 	return spec, nil
@@ -79,22 +73,22 @@ func readSpecFromFile(path string) (ImageSpec, error) {
 func createObjects(s ImageSpec, specFilePath string) ([]geometry.Object, error) {
 	props, err := createObjectProps(s.SurfaceProps)
 	if err != nil {
-		return []geometry.Object{}, err
+		return []geometry.Object{}, fmt.Errorf("failed to create object properties: %w", err)
 	}
 
 	sphereObjects, err := createSphereObjects(s.Spheres, props)
 	if err != nil {
-		return []geometry.Object{}, err
+		return []geometry.Object{}, fmt.Errorf("failed to create sphere objects: %w", err)
 	}
 
 	triangleObjects, err := createTriangleObjects(s.Triangles, props)
 	if err != nil {
-		return []geometry.Object{}, err
+		return []geometry.Object{}, fmt.Errorf("failed to create triangle objects: %w", err)
 	}
 
 	wavefrontModelObjects, err := createWavefrontModelObjects(s.Models, specFilePath, props)
 	if err != nil {
-		return []geometry.Object{}, err
+		return []geometry.Object{}, fmt.Errorf("failed to create wavefront model objects: %w", err)
 	}
 
 	objs := make([]geometry.Object, 0, len(sphereObjects)+len(triangleObjects)+len(wavefrontModelObjects))
@@ -112,7 +106,7 @@ func createObjectProps(surfacePropSpecs []SurfacePropSpec) (map[string]geometry.
 		_, exists := props[prop.Name]
 		if exists {
 			return nil, fmt.Errorf(
-				"multiple surface properties with name \"%s\" defined but name must be unique",
+				"multiple surface properties with name %q defined but name must be unique",
 				prop.Name,
 			)
 		}
@@ -132,12 +126,9 @@ func createSphereObjects(sphereSpecs []SphereSpec, props map[string]geometry.Obj
 	sphereObjects := make([]geometry.Object, 0, len(sphereSpecs))
 
 	for _, sphere := range sphereSpecs {
-		prop, exists := props[sphere.SurfaceProp]
-		if !exists {
-			return []geometry.Object{}, fmt.Errorf(
-				"surface properties with name \"%s\" do not exist but are assigned to a sphere",
-				sphere.SurfaceProp,
-			)
+		prop, err := lookupSurfaceProp(sphere.SurfaceProp, props)
+		if err != nil {
+			return []geometry.Object{}, fmt.Errorf("failed to lookup surface properties for sphere: %w", err)
 		}
 
 		sphereObjects = append(sphereObjects, &geometry.Sphere{
@@ -154,12 +145,9 @@ func createTriangleObjects(triangleSpecs []TriangleSpec, props map[string]geomet
 	triangleObjects := make([]geometry.Object, 0, len(triangleSpecs))
 
 	for _, triangle := range triangleSpecs {
-		prop, exists := props[triangle.SurfaceProp]
-		if !exists {
-			return []geometry.Object{}, fmt.Errorf(
-				"surface properties with name \"%s\" do not exist but are assigned to a triangle",
-				triangle.SurfaceProp,
-			)
+		prop, err := lookupSurfaceProp(triangle.SurfaceProp, props)
+		if err != nil {
+			return []geometry.Object{}, fmt.Errorf("failed to lookup surface properties for triangle: %w", err)
 		}
 
 		triangleObjects = append(triangleObjects, &geometry.Triangle{
@@ -177,17 +165,14 @@ func createWavefrontModelObjects(modelSpecs []WavefrontModelSpec, specFilePath s
 	wavefrontObjects := make([]geometry.Object, 0)
 
 	for _, objModel := range modelSpecs {
-		prop, exists := props[objModel.SurfaceProp]
-		if !exists {
-			return []geometry.Object{}, fmt.Errorf(
-				"surface properties with name \"%s\" do not exist but are assigned to a wavefront model",
-				objModel.SurfaceProp,
-			)
+		prop, err := lookupSurfaceProp(objModel.SurfaceProp, props)
+		if err != nil {
+			return []geometry.Object{}, fmt.Errorf("failed to lookup surface properties for wavefront model: %w", err)
 		}
 
 		absoluteSpecPath, err := filepath.Abs(specFilePath)
 		if err != nil {
-			return []geometry.Object{}, err
+			return []geometry.Object{}, fmt.Errorf("failed to get absolute path of specification file: %w", err)
 		}
 
 		absolutePath := filepath.Join(filepath.Dir(absoluteSpecPath), objModel.Path)
@@ -195,11 +180,23 @@ func createWavefrontModelObjects(modelSpecs []WavefrontModelSpec, specFilePath s
 		wavefrontObjs, err := wavefront.Read(absolutePath, objModel.Center, objModel.Rotation, objModel.Size, prop)
 
 		if err != nil {
-			return []geometry.Object{}, err
+			return []geometry.Object{}, fmt.Errorf("failed to read wavefront model: %w", err)
 		}
 
 		wavefrontObjects = append(wavefrontObjects, wavefrontObjs...)
 	}
 
 	return wavefrontObjects, nil
+}
+
+func lookupSurfaceProp(name string, props map[string]geometry.ObjectProps) (geometry.ObjectProps, error) {
+	prop, exists := props[name]
+	if !exists {
+		return geometry.ObjectProps{}, fmt.Errorf(
+			"surface properties with name %q do not exist but are assigned to a wavefront model",
+			name,
+		)
+	}
+
+	return prop, nil
 }

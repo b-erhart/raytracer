@@ -136,10 +136,6 @@ func (o WavefrontModelSpec) Validate() error {
 	)
 }
 
-type Validator interface {
-	Validate() error
-}
-
 func validateMany(assertions ...error) error {
 	for _, err := range assertions {
 		if err != nil {

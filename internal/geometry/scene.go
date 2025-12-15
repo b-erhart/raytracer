@@ -3,7 +3,7 @@ package geometry
 import "github.com/b-erhart/raytracer/internal/canvas"
 
 type Scene struct {
-	Canvas     canvas.Canvas
+	Canvas     *canvas.Canvas
 	View       View
 	Objects    []Object
 	Lights     []Light
