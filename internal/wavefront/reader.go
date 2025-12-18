@@ -13,33 +13,54 @@ import (
 	"github.com/b-erhart/raytracer/internal/geometry"
 )
 
+type fileContent struct {
+	vertices      []geometry.Vector
+	vertexNormals []geometry.Vector
+	faces         []geometry.Triangle
+	maxVertex     geometry.Vector
+	minVertex     geometry.Vector
+}
+
 func Read(path string, origin, rotation geometry.Vector, scaling float64, props geometry.ObjectProps) ([]geometry.Object, error) {
 	logger := log.Default()
-
 	logger.Printf("reading wavefront file \"%s\"\n", path)
 
 	file, err := os.Open(path)
 	if err != nil {
-		return []geometry.Object{}, err
+		return nil, err
+	}
+	defer file.Close()
+
+	content, err := parseFile(file, logger)
+	if err != nil {
+		return nil, err
 	}
 
+	return turnContentToObjects(content, scaling, rotation, origin, props)
+}
+
+func parseFile(file *os.File, logger *log.Logger) (fileContent, error) {
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
 
-	unsupportedDirectives := make([]string, 0, 5)
+	unsupportedDirectives := make([]string, 0)
 	lineNr := 0
-	vs := make([]geometry.Vector, 0, 100)
-	vns := make([]geometry.Vector, 0, 100)
-	fs := make([]geometry.Triangle, 0, 100)
-	minV := geometry.Vector{X: math.MaxInt, Y: math.MaxInt, Z: math.MaxInt}
-	maxV := geometry.Vector{X: math.MinInt, Y: math.MinInt, Z: math.MinInt}
+
+	content := fileContent{
+		vertices:      make([]geometry.Vector, 0),
+		vertexNormals: make([]geometry.Vector, 0),
+		faces:         make([]geometry.Triangle, 0),
+		maxVertex:     geometry.Vector{X: math.Inf(-1), Y: math.Inf(-1), Z: math.Inf(-1)},
+		minVertex:     geometry.Vector{X: math.Inf(1), Y: math.Inf(1), Z: math.Inf(1)},
+	}
+
 	for scanner.Scan() {
 		lineNr++
 
 		line := scanner.Text()
-		words := deleteEmpty(strings.Split(line, " "))
+		words := strings.Fields(line)
 
-		if len(words) == 0 || words[0][0] == '#' {
+		if len(words) == 0 {
 			continue
 		}
 
@@ -47,51 +68,52 @@ func Read(path string, origin, rotation geometry.Vector, scaling float64, props 
 		case "#":
 			continue
 		case "v":
-			v, err := readVector(words)
+			newVertex, err := readVector(words)
 			if err != nil {
-				logger.Printf("line %d: %v\n", lineNr, err)
-				return []geometry.Object{}, err
+				return fileContent{}, fmt.Errorf("unable to parse vertex on line %d: %v", lineNr, err)
 			}
 
-			updateExtremes(&minV, &maxV, v)
+			updateExtremes(&content.minVertex, &content.maxVertex, newVertex)
 
-			vs = append(vs, v)
+			content.vertices = append(content.vertices, newVertex)
 		case "vn":
-			vn, err := readVector(words)
+			newVertexNormal, err := readVector(words)
 			if err != nil {
-				logger.Printf("line %d: %v\n", lineNr, err)
-				return []geometry.Object{}, err
+				return fileContent{}, fmt.Errorf("unable to parse vertex normal on line %d: %v", lineNr, err)
 			}
 
-			vns = append(vns, vn)
+			content.vertexNormals = append(content.vertexNormals, newVertexNormal)
 		case "f":
-			f, err := readFace(words, vs, vns)
+			newFace, err := readFace(words, content.vertices, content.vertexNormals)
 			if err != nil {
-				logger.Printf("line %d: %v\n", lineNr, err)
-				return []geometry.Object{}, err
+				return fileContent{}, err
 			}
 
-			fs = append(fs, f...)
+			content.faces = append(content.faces, newFace...)
 		default:
 			if !slices.Contains(unsupportedDirectives, words[0]) {
-				logger.Printf("unsupported directive \"%s\" found - will be ignored\n", words[0])
+				logger.Printf("unsupported directive \"%s\" found - will be ignored", words[0])
 				unsupportedDirectives = append(unsupportedDirectives, words[0])
 			}
 		}
 	}
 
-	objs := make([]geometry.Object, 0, len(fs))
+	return content, nil
+}
+
+func turnContentToObjects(content fileContent, scaling float64, rotation geometry.Vector, origin geometry.Vector, props geometry.ObjectProps) ([]geometry.Object, error) {
+	objs := make([]geometry.Object, 0, len(content.faces))
 	centering := geometry.Vector{
-		X: -minV.X - (maxV.X-minV.X)/2,
-		Y: -minV.Y - (maxV.Y-minV.Y)/2,
-		Z: -minV.Z - (maxV.Z-minV.Z)/2,
+		X: -content.minVertex.X - (content.maxVertex.X-content.minVertex.X)/2,
+		Y: -content.minVertex.Y - (content.maxVertex.Y-content.minVertex.Y)/2,
+		Z: -content.minVertex.Z - (content.maxVertex.Z-content.minVertex.Z)/2,
 	}
 
 	trianglesPerCorner := make(map[geometry.Vector][]*geometry.Triangle)
-	size := math.Max(maxV.X-minV.X, math.Max(maxV.Y-minV.Y, maxV.Z-minV.Z))
+	size := math.Max(content.maxVertex.X-content.minVertex.X, math.Max(content.maxVertex.Y-content.minVertex.Y, content.maxVertex.Z-content.minVertex.Z))
 	scalingFactor := scaling / size
 
-	for _, f := range fs {
+	for _, f := range content.faces {
 		a := geometry.Vector{
 			X: ((f.A.X + centering.X) * scalingFactor),
 			Y: ((f.A.Y + centering.Y) * scalingFactor),
@@ -165,35 +187,29 @@ func calculateCornerNormal(corner geometry.Vector, triangle *geometry.Triangle, 
 
 func readVector(words []string) (geometry.Vector, error) {
 	if len(words) < 4 {
-		return geometry.Vector{}, fmt.Errorf("invalid vertex definition (less than 3 elements given)")
+		return geometry.Vector{}, fmt.Errorf("invalid vertex definition: expected 3 elements but got %d", len(words)-1)
 	}
 
-	x, err := strconv.ParseFloat(words[1], 64)
-	if err != nil {
-		return geometry.Vector{}, fmt.Errorf("invalid definition (first element is not a valid number)")
+	elements := make([]float64, 3)
+	for i := range elements {
+		var err error
+		elements[i], err = strconv.ParseFloat(words[i+1], 64)
+		if err != nil {
+			return geometry.Vector{}, fmt.Errorf("invalid vertex definition: element #%d is not a valid number", i+1)
+		}
 	}
 
-	y, err := strconv.ParseFloat(words[2], 64)
-	if err != nil {
-		return geometry.Vector{}, fmt.Errorf("invalid definition (second element is not a valid number)")
-	}
-
-	z, err := strconv.ParseFloat(words[3], 64)
-	if err != nil {
-		return geometry.Vector{}, fmt.Errorf("invalid definition (third element is not a valid number)")
-	}
-
-	return geometry.Vector{X: x, Y: y, Z: z}, nil
+	return geometry.Vector{X: elements[0], Y: elements[1], Z: elements[2]}, nil
 }
 
-func readFace(words []string, vs, vns []geometry.Vector) ([]geometry.Triangle, error) {
+func readFace(words []string, vertices, vertexNormals []geometry.Vector) ([]geometry.Triangle, error) {
 	if words[0] != "f" {
-		return []geometry.Triangle{}, fmt.Errorf("invalid face definition (line does not start with \"v\")")
+		panic("got a face definition line that does not start with 'f'")
 	} else if len(words) < 4 {
-		return []geometry.Triangle{}, fmt.Errorf("invalid vertex definition (faces must have at least 3 corner vetrices)")
+		return nil, fmt.Errorf("invalid face definition: faces must have at least 3 corner vertices")
 	} else if len(words) > 5 {
 		// TODO: implement Seidel's algorithm to support any polygon
-		return []geometry.Triangle{}, fmt.Errorf("faces with more than four corners are currently not supported")
+		return nil, fmt.Errorf("invalid face definition: faces with more than four corners are currently not supported")
 	}
 
 	corners := make([]geometry.Vector, 0, 3)
@@ -201,46 +217,46 @@ func readFace(words []string, vs, vns []geometry.Vector) ([]geometry.Triangle, e
 
 	for i := 1; i < len(words); i++ {
 		cornerSpec := strings.Split(words[i], "/")
-		vIdxStr := cornerSpec[0]
-		vIdx, err := strconv.ParseInt(vIdxStr, 10, 64)
+		vIndexStr := cornerSpec[0]
+		vIndex, err := strconv.ParseInt(vIndexStr, 10, 64)
 		if err != nil {
-			return []geometry.Triangle{}, fmt.Errorf("invalid face definition (element #%d is not a valid number)", i)
+			return nil, fmt.Errorf("invalid face definition: element #%d is not a valid number", i)
 		}
 
-		if vIdx > int64(len(vs)) {
-			return []geometry.Triangle{}, fmt.Errorf("invalid face definition (vertex #%d is referenced but not defined)", vIdx)
-		} else if int(vIdx) == 0 {
-			return []geometry.Triangle{}, fmt.Errorf("invalid face definition (vertex number must be greater than 0 but is %d)", vIdx)
+		if vIndex > int64(len(vertices)) {
+			return nil, fmt.Errorf("invalid face definition: vertex #%d is referenced but not defined", vIndex)
+		} else if int(vIndex) == 0 {
+			return nil, fmt.Errorf("invalid face definition: vertex number must be greater than 0 but is %d", vIndex)
 		}
 
-		if vIdx < 0 {
-			vIdx = int64(len(vs)) + vIdx + 1
+		if vIndex < 0 {
+			vIndex = int64(len(vertices)) + vIndex + 1
 		}
 
-		corners = append(corners, vs[vIdx-1])
+		corners = append(corners, vertices[vIndex-1])
 
 		if len(cornerSpec) >= 3 {
-			vnIdxStr := cornerSpec[2]
-			vnIdx, err := strconv.ParseInt(vnIdxStr, 10, 64)
+			vnIndexStr := cornerSpec[2]
+			vnIndex, err := strconv.ParseInt(vnIndexStr, 10, 64)
 			if err != nil {
-				return []geometry.Triangle{}, fmt.Errorf("invalid face definition (element #%d is not a valid number)", i)
+				return nil, fmt.Errorf("invalid face definition: element #%d is not a valid number", i)
 			}
 
-			if vnIdx > int64(len(vns)) {
-				return []geometry.Triangle{}, fmt.Errorf("invalid face definition (vertex normal #%d is referenced but not defined)", vIdx)
-			} else if int(vnIdx) == 0 {
-				return []geometry.Triangle{}, fmt.Errorf("invalid face definition (vertex normal number must be greater than 0)", vIdx)
+			if vnIndex > int64(len(vertexNormals)) {
+				return nil, fmt.Errorf("invalid face definition: vertex normal #%d is referenced but not defined", vIndex)
+			} else if int(vnIndex) == 0 {
+				return nil, fmt.Errorf("invalid face definition: vertex normal number must be greater than 0 but is %d", vIndex)
 			}
 
-			if vnIdx < 0 {
-				vnIdx = int64(len(vns)) + vnIdx + 1
+			if vnIndex < 0 {
+				vnIndex = int64(len(vertexNormals)) + vnIndex + 1
 			}
 
-			normals = append(normals, vns[vnIdx-1])
+			normals = append(normals, vertexNormals[vnIndex-1])
 		}
 	}
 
-	triangles := make([]geometry.Triangle, 0, 1)
+	triangles := make([]geometry.Triangle, 0)
 
 	t := geometry.Triangle{A: corners[0], B: corners[1], C: corners[2]}
 
@@ -269,12 +285,12 @@ func readFace(words []string, vs, vns []geometry.Vector) ([]geometry.Triangle, e
 	return triangles, nil
 }
 
-func rotate(vec, rotation geometry.Vector) geometry.Vector {
+func rotate(vertex, rotation geometry.Vector) geometry.Vector {
 	// rotate around x axis
 	xRotated := geometry.Vector{
-		X: vec.X,
-		Y: vec.Y*math.Cos(rotation.X*math.Pi) - vec.Z*math.Sin(rotation.X*math.Pi),
-		Z: vec.Y*math.Sin(rotation.X*math.Pi) + vec.Z*math.Cos(rotation.X*math.Pi),
+		X: vertex.X,
+		Y: vertex.Y*math.Cos(rotation.X*math.Pi) - vertex.Z*math.Sin(rotation.X*math.Pi),
+		Z: vertex.Y*math.Sin(rotation.X*math.Pi) + vertex.Z*math.Cos(rotation.X*math.Pi),
 	}
 
 	// rotate around y axis
@@ -294,22 +310,12 @@ func rotate(vec, rotation geometry.Vector) geometry.Vector {
 	return xyzRotated
 }
 
-func updateExtremes(minV, maxV *geometry.Vector, newV geometry.Vector) {
-	minV.X = math.Min(minV.X, newV.X)
-	minV.Y = math.Min(minV.Y, newV.Y)
-	minV.Z = math.Min(minV.Z, newV.Z)
+func updateExtremes(minVertex, maxVertex *geometry.Vector, newVertex geometry.Vector) {
+	minVertex.X = math.Min(minVertex.X, newVertex.X)
+	minVertex.Y = math.Min(minVertex.Y, newVertex.Y)
+	minVertex.Z = math.Min(minVertex.Z, newVertex.Z)
 
-	maxV.X = math.Max(maxV.X, newV.X)
-	maxV.Y = math.Max(maxV.Y, newV.Y)
-	maxV.Z = math.Max(maxV.Z, newV.Z)
-}
-
-func deleteEmpty(s []string) []string {
-	var r []string
-	for _, str := range s {
-		if str != "" {
-			r = append(r, str)
-		}
-	}
-	return r
+	maxVertex.X = math.Max(maxVertex.X, newVertex.X)
+	maxVertex.Y = math.Max(maxVertex.Y, newVertex.Y)
+	maxVertex.Z = math.Max(maxVertex.Z, newVertex.Z)
 }
