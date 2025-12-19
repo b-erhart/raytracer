@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"os"
 	"runtime/pprof"
 	"time"
@@ -13,39 +13,42 @@ import (
 func main() {
 	f, err := os.Create("raytracer.prof")
 	if err != nil {
-		log.Fatalf("failed to create profiling file: %v", err)
+		fmt.Fprintf(os.Stderr, "failed to create profiling file: %v", err)
+		os.Exit(1)
 	}
 
 	pprof.StartCPUProfile(f)
 	defer pprof.StopCPUProfile()
-	scene, err := specification.CreateSceneFromSpecFile("SPEC/image.json")
 
+	scene, err := specification.CreateSceneFromSpecFile("SPEC/image.json")
 	if err != nil {
-		log.Fatalf("failed to read image specification: %v", err)
+		fmt.Fprintf(os.Stderr, "failed to read image specification: %v", err)
+		os.Exit(1)
 	}
 
-	log.Println("Image spec read successfully!")
+	fmt.Println("Image spec read successfully!")
 
 	if scene.SSAA {
-		log.Println("SSAA enabled - rendering at doubled resolution...")
+		fmt.Println("SSAA enabled - rendering at doubled resolution...")
 	}
 
 	raytracer := geometry.NewRaytracer(scene.Objects, scene.Lights, scene.Background)
 
-	log.Println("Rendering image...")
+	fmt.Println("Rendering image...")
 	start := time.Now()
 	raytracer.Render(scene.View, scene.Canvas)
 	elapsed := time.Since(start)
-	log.Printf("Rendering done! (took %s)\n", elapsed)
+	fmt.Printf("Rendering done! (took %s)\n", elapsed)
 	if scene.SSAA {
 		scene.Canvas = scene.Canvas.CreateSSAACanvas()
 	}
 
-	log.Println("Writing PPM file...")
+	fmt.Println("Writing PPM file...")
 	err = scene.Canvas.WriteToPpm("./output.ppm")
 
 	if err != nil {
-		log.Fatalf("failed to write PPM file: %v", err)
+		fmt.Fprintf(os.Stderr, "failed to write PPM file: %v", err)
+		os.Exit(1)
 	}
-	log.Println("Done!")
+	fmt.Println("Done!")
 }

@@ -3,7 +3,6 @@ package wavefront
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"math"
 	"os"
 	"slices"
@@ -22,8 +21,7 @@ type fileContent struct {
 }
 
 func Read(path string, origin, rotation geometry.Vector, scaling float64, props geometry.ObjectProps) ([]geometry.Object, error) {
-	logger := log.Default()
-	logger.Printf("reading wavefront file \"%s\"\n", path)
+	fmt.Printf("reading wavefront file \"%s\"\n", path)
 
 	file, err := os.Open(path)
 	if err != nil {
@@ -31,7 +29,7 @@ func Read(path string, origin, rotation geometry.Vector, scaling float64, props 
 	}
 	defer file.Close()
 
-	content, err := parseFile(file, logger)
+	content, err := parseFile(file)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +37,7 @@ func Read(path string, origin, rotation geometry.Vector, scaling float64, props 
 	return turnContentToObjects(content, scaling, rotation, origin, props)
 }
 
-func parseFile(file *os.File, logger *log.Logger) (fileContent, error) {
+func parseFile(file *os.File) (fileContent, error) {
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
 
@@ -92,7 +90,7 @@ func parseFile(file *os.File, logger *log.Logger) (fileContent, error) {
 			content.faces = append(content.faces, newFace...)
 		default:
 			if !slices.Contains(unsupportedDirectives, words[0]) {
-				logger.Printf("unsupported directive \"%s\" found - will be ignored", words[0])
+				fmt.Printf("unsupported directive \"%s\" found - will be ignored\n", words[0])
 				unsupportedDirectives = append(unsupportedDirectives, words[0])
 			}
 		}
